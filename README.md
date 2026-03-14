@@ -11,6 +11,8 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![PT-BR](https://img.shields.io/badge/lang-PT--BR-green)]()
 
+**🇧🇷 Português** | [🇺🇸 English](README.en.md)
+
 **1 comando. 5 perspectivas. 1 relatório executivo.**
 
 </div>
