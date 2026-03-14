@@ -111,15 +111,6 @@ jobs:
             README.md
             CONTRIBUTING.md
             docs/*.md
-          config: |
-            {
-              "default": true,
-              "MD013": false,
-              "MD033": false,
-              "MD041": false,
-              "MD024": false,
-              "MD040": false
-            }
 
   shellcheck:
     name: ShellCheck
