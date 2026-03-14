@@ -1,8 +1,51 @@
+<div align="center">
+
 # Claude War Room
 
 **Orquestrador de 5 agentes especializados para análise 360° de features com Claude Code.**
 
-O **Modo War Room** é uma estratégia de orquestração que executa sequencialmente 5 agentes de IA especializados, cada um analisando uma dimensão diferente do seu código. O resultado é um relatório executivo completo com falhas detectadas, severidades e plano de ação.
+[![CI](https://github.com/RandMelville/claude-war-room/actions/workflows/validate.yml/badge.svg)](https://github.com/RandMelville/claude-war-room/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
+[![Agents](https://img.shields.io/badge/Agents-5-blue)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![PT-BR](https://img.shields.io/badge/lang-PT--BR-green)]()
+
+**1 comando. 5 perspectivas. 1 relatório executivo.**
+
+</div>
+
+---
+
+> O **Modo War Room** é uma estratégia de orquestração que executa sequencialmente 5 agentes de IA especializados, cada um analisando uma dimensão diferente do seu código. O resultado é um relatório executivo completo com falhas detectadas, severidades e plano de ação.
+
+<table>
+<tr>
+<td align="center"><b>Zero Dependências</b><br/>Apenas arquivos Markdown</td>
+<td align="center"><b>Instalação em 30s</b><br/>Um script, pronto</td>
+<td align="center"><b>Personalizável</b><br/>Adapte para qualquer domínio</td>
+<td align="center"><b>Open Source</b><br/>MIT License</td>
+</tr>
+</table>
+
+---
+
+## Demo
+
+<!-- TODO: Gravar GIF de uma execução real e substituir este bloco -->
+```
+$ claude
+> ativar modo war room: Sistema de Lançamento de Notas
+
+[1/5] DOC-REVERSE — Mapeando arquitetura e fluxos...
+[2/5] ARQUITETO-INFRA — Identificando gargalos de escala...
+[3/5] DEV-CONCURRENCY — Caçando race conditions...
+[4/5] SRE-CHAOS — Simulando cenários de falha...
+[5/5] LEAD-REPORT — Consolidando relatório executivo...
+
+Report de Confiança: Índice 🔴 Baixo
+3 itens críticos identificados | Plano de ação gerado
+```
 
 ---
 
@@ -63,7 +106,7 @@ Cada agente **recebe o contexto e as descobertas dos anteriores**, construindo u
 ### Automática (recomendada)
 
 ```bash
-git clone https://github.com/SEU_USUARIO/claude-war-room.git
+git clone https://github.com/RandMelville/claude-war-room.git
 cd claude-war-room
 chmod +x install.sh
 ./install.sh
@@ -192,12 +235,34 @@ Cada agente constrói sobre as descobertas do anterior. O SRE de Chaos, por exem
 
 ## Contribuição
 
-Contribuições são bem-vindas! Algumas ideias:
+Contribuições são bem-vindas! Leia o [Guia de Contribuição](CONTRIBUTING.md) para começar.
+
+Algumas ideias:
 
 - Traduzir agentes para inglês
 - Criar agentes adicionais (ex: Security Auditor, Performance Profiler)
 - Melhorar os templates de saída
 - Adicionar exemplos reais (anonimizados)
+- Adaptar para novos domínios (FinTech, HealthTech, SaaS)
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=RandMelville/claude-war-room&type=Date)](https://star-history.com/#RandMelville/claude-war-room&Date)
+
+---
+
+<div align="center">
+
+## Feito com
+
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-CLI-blueviolet?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=)](https://docs.anthropic.com/en/docs/claude-code)
+[![Claude Opus](https://img.shields.io/badge/Model-Claude%20Opus%204-orange)](https://anthropic.com)
+
+**Construído por [@RandMelville](https://github.com/RandMelville)**
+
+</div>
 
 ---
 
