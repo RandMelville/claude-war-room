@@ -152,7 +152,63 @@ ativar modo war room: Sistema de Lançamento de Notas
 
 ---
 
-## Agente 5: LEAD-REPORT (Relatório Final)
+## Agente 5: SEC-AUDIT (Segurança)
+
+### Saída resumida:
+
+> ## 1. Veredito de Segurança
+>
+> Classificação: 🔴 **Crítico**
+>
+> **Vulnerabilidade mais crítica:** IDOR no endpoint GET /notas/:id permite acesso a notas de qualquer aluno sem verificação de ownership.
+> **Dados sensíveis em risco:** PII de menores (nomes, notas acadêmicas), credenciais de professores.
+>
+> ## 3. Catálogo de Vulnerabilidades
+>
+> ### Vulnerabilidade #1: IDOR em Notas de Alunos
+>
+> | Atributo               | Detalhe                                          |
+> |------------------------|--------------------------------------------------|
+> | **Categoria OWASP**    | A01:2021 - Broken Access Control                 |
+> | **Severidade**         | Crítica                                          |
+> | **Explorabilidade**    | Fácil                                            |
+> | **Impacto**            | Acesso a notas de qualquer aluno                 |
+> | **Dados em Risco**     | PII de menores, notas acadêmicas                 |
+> | **LGPD Relevante?**    | Sim — dados de menores (Art. 14)                 |
+> | **Evidência no código**| NotaController.kt:32                             |
+>
+> **Vetor de ataque:**
+> 1. Professor autenticado acessa GET /api/v1/notas/123
+> 2. Altera o ID para GET /api/v1/notas/456 (aluno de outra turma)
+> 3. Recebe notas de aluno que não é seu — sem verificação de ownership
+>
+> ### Vulnerabilidade #2: Kafka Credentials Hardcoded
+>
+> | Atributo               | Detalhe                                          |
+> |------------------------|--------------------------------------------------|
+> | **Categoria OWASP**    | A07:2021 - Identification and Authentication     |
+> | **Severidade**         | Alta                                             |
+> | **Evidência no código**| application.yml:28                               |
+>
+> ## 4. Análise de Autenticação e Autorização
+>
+> | Endpoint              | Autenticação | Autorização (Role) | Ownership Check | Rate Limit |
+> |-----------------------|--------------|--------------------|-----------------|-----------:|
+> | GET /notas/:id        | JWT          | Não tem!           | Não tem!        | Não        |
+> | POST /notas/batch     | JWT          | PROFESSOR          | Por turma       | Não        |
+> | POST /import/csv      | JWT          | COORDENADOR        | Por escola      | Não        |
+>
+> ## 7. Plano de Remediação
+>
+> | Prioridade | Vulnerabilidade         | Correção                           | Esforço | Impacto LGPD |
+> |------------|------------------------|------------------------------------|---------|--------------|
+> | P0         | IDOR em notas          | Adicionar ownership check por turma| Baixo   | Sim          |
+> | P0         | Credentials hardcoded  | Mover para env vars/secrets manager| Baixo   | Não          |
+> | P1         | Sem rate limiting      | Adicionar rate limiter por IP/user | Médio   | Não          |
+
+---
+
+## Agente 6: LEAD-REPORT (Relatório Final)
 
 ### Saída completa (formato do report final):
 
@@ -205,4 +261,5 @@ ativar modo war room: Sistema de Lançamento de Notas
 - **Especificidade do comando importa:** "Lançamento de Notas" produz resultados melhores que "o sistema todo"
 - **Tamanho do codebase:** Features com 5-50 arquivos geram as melhores análises
 - **Modelo:** Opus produz análises mais profundas e com mais referências a arquivo:linha
-- **Tempo de execução:** Uma análise completa com 5 agentes leva de 5 a 15 minutos dependendo da complexidade
+- **Tempo de execução:** Uma análise completa com 6 agentes leva de 8 a 20 minutos dependendo da complexidade
+- **Report HTML:** Após a execução, use `./generate-report.sh war-room/[feature]/` para gerar um report interativo

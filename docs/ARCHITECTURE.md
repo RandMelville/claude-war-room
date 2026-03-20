@@ -14,7 +14,8 @@ sequenceDiagram
     participant A2 as ARQUITETO-INFRA
     participant A3 as DEV-CONCURRENCY
     participant A4 as SRE-CHAOS
-    participant A5 as LEAD-REPORT
+    participant A5 as SEC-AUDIT
+    participant A6 as LEAD-REPORT
 
     U->>CC: ativar modo war room: [FEATURE]
     CC->>A1: Analise o código desta feature
@@ -25,8 +26,10 @@ sequenceDiagram
     A3-->>CC: Race Conditions + Locking
     CC->>A4: Simule falhas (com contexto de A1+A2+A3)
     A4-->>CC: Cenários de Desastre
-    CC->>A5: Consolide tudo (com contexto de A1+A2+A3+A4)
-    A5-->>U: Report de Confiança Final
+    CC->>A5: Audite segurança (com contexto de A1+A2+A3+A4)
+    A5-->>CC: Vulnerabilidades + Remediação
+    CC->>A6: Consolide tudo (com contexto de A1+A2+A3+A4+A5)
+    A6-->>U: Report de Confiança Final
 ```
 
 ### Por que sequencial?
@@ -37,7 +40,8 @@ A ordem não é arbitrária:
 2. **ARQUITETO-INFRA segundo** — Identifica os limites físicos do sistema. O especialista em concorrência precisa saber onde estão os gargalos de conexão.
 3. **DEV-CONCURRENCY terceiro** — Com o mapa de fluxos (A1) e os pontos de pressão (A2), pode simular race conditions nos pontos certos.
 4. **SRE-CHAOS quarto** — Usa todos os dados anteriores para simular falhas realistas, não hipotéticas.
-5. **LEAD-REPORT último** — Precisa de TODAS as descobertas para priorizar por impacto de negócio.
+5. **SEC-AUDIT quinto** — Com o mapa completo de arquitetura, gargalos, concorrência e falhas, audita segurança sabendo exatamente onde estão as superfícies de ataque.
+6. **LEAD-REPORT último** — Precisa de TODAS as descobertas para priorizar por impacto de negócio.
 
 ### Passagem de Contexto
 
@@ -147,9 +151,33 @@ O arquivo `feedback_war_room_mode.md` define a regra:
 
 ---
 
-### Agente 5: LEAD-REPORT (Quality & Stability Lead)
+### Agente 5: SEC-AUDIT (Security Auditor)
 
-**Arquivo:** `agents/05-quality-stability-lead.md`
+**Arquivo:** `agents/05-security-auditor.md`
+
+**Propósito:** Encontrar vulnerabilidades exploráveis antes que um atacante as encontre. É o "hacker ético" do War Room.
+
+**Fases de execução:**
+1. **Reconhecimento de Superfície de Ataque** — Usa o mapa do DOC-REVERSE para identificar pontos de entrada, fluxos de auth e dados sensíveis.
+2. **Análise de Vulnerabilidades** — Para cada ponto de entrada: validação de input, verificação de autorização, criptografia de dados, vazamento de informações em erros.
+3. **Entrega** — Catálogo de vulnerabilidades com vetores de ataque e plano de remediação.
+
+**Output obrigatório:**
+- Veredito de Segurança (Crítico/Atenção/Seguro)
+- Mapa de Superfície de Ataque (diagrama Mermaid)
+- Catálogo de Vulnerabilidades (tabela OWASP + vetor de ataque passo a passo + código vulnerável + correção)
+- Análise de Autenticação e Autorização (endpoint × checks)
+- Auditoria de Secrets e Configuração (tabela de itens expostos)
+- Análise de Dependências (CVEs conhecidas)
+- Plano de Remediação (P0/P1/P2 com impacto LGPD)
+
+**Diferencial:** Apresenta cada vulnerabilidade com vetor de ataque passo a passo e código corrigido, e destaca implicações LGPD para dados de menores.
+
+---
+
+### Agente 6: LEAD-REPORT (Quality & Stability Lead)
+
+**Arquivo:** `agents/06-quality-stability-lead.md`
 
 **Propósito:** Traduzir tudo para linguagem de negócio e priorizar por impacto. É o "tradutor" do War Room.
 
@@ -188,7 +216,7 @@ Todos os agentes usam o mesmo conjunto de ferramentas:
 
 ## Limitações Conhecidas
 
-1. **Contexto da conversa** — Em codebases muito grandes, os 5 agentes podem esgotar a janela de contexto. Recomendação: foque em features/módulos específicos.
+1. **Contexto da conversa** — Em codebases muito grandes, os 6 agentes podem esgotar a janela de contexto. Recomendação: foque em features/módulos específicos.
 2. **Modelo** — Todos os agentes usam `model: opus`. Sonnet funciona, mas com menor profundidade de análise.
 3. **Leitura estática** — Os agentes analisam código estático. Não executam testes, não acessam banco de dados em produção, não fazem profiling real.
 4. **Domínio** — Os templates vêm otimizados para EdTech. Para outros domínios, veja [CUSTOMIZATION.md](CUSTOMIZATION.md).
