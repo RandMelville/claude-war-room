@@ -2,7 +2,7 @@
 
 # =============================================================================
 # Claude War Room - Instalador
-# Instala os 5 agentes e o trigger de orquestração no Claude Code
+# Instala os 6 agentes e o trigger de orquestração no Claude Code
 # =============================================================================
 
 set -euo pipefail
@@ -30,7 +30,8 @@ declare -a AGENT_FILES=(
     "02-scalability-architect.md:scalability-architect.md"
     "03-concurrency-specialist.md:concurrency-specialist.md"
     "04-chaos-engineer-sre.md:chaos-engineer-sre.md"
-    "05-quality-stability-lead.md:quality-stability-lead.md"
+    "05-security-auditor.md:security-auditor.md"
+    "06-quality-stability-lead.md:quality-stability-lead.md"
 )
 
 # =============================================================================
@@ -142,7 +143,7 @@ done
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
 echo "║         Claude War Room - Instalador             ║"
-echo "║   5 Agentes para Análise 360° de Features        ║"
+echo "║   6 Agentes para Análise 360° de Features        ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 
@@ -186,7 +187,7 @@ log_success "Claude Code detectado em $CLAUDE_DIR"
 # =============================================================================
 
 echo ""
-log_info "Instalando 5 agentes..."
+log_info "Instalando 6 agentes..."
 echo ""
 
 if [ ! -d "$AGENTS_DIR" ]; then
@@ -248,7 +249,7 @@ else
 
                 # Atualiza ou cria MEMORY.md
                 MEMORY_INDEX="$MEMORY_DIR/MEMORY.md"
-                MEMORY_ENTRY="- [feedback_war_room_mode.md](./feedback_war_room_mode.md) - Comando \"ativar modo war room: [FEATURE]\" orquestra 5 agentes sequenciais"
+                MEMORY_ENTRY="- [feedback_war_room_mode.md](./feedback_war_room_mode.md) - Comando \"ativar modo war room: [FEATURE]\" orquestra 6 agentes sequenciais"
 
                 if [ -f "$MEMORY_INDEX" ]; then
                     if ! grep -q "feedback_war_room_mode" "$MEMORY_INDEX"; then

@@ -85,15 +85,15 @@ Quando o usuário digitar **"activate war room: [FEATURE NAME]"**
 
 ## 5. Adicionar um Agente ao Pipeline
 
-Para adicionar um 6º agente (ex: Security Auditor):
+Para adicionar um 7º agente (ex: Performance Profiler):
 
 ### Passo 1: Crie o arquivo do agente
 
-Crie `agents/06-security-auditor.md` seguindo o padrão:
+Crie `agents/07-performance-profiler.md` seguindo o padrão:
 
 ```yaml
 ---
-name: "Security Auditor"
+name: "Performance Profiler"
 description: "Descrição do agente..."
 model: opus
 tools:
@@ -118,10 +118,10 @@ O corpo do arquivo deve seguir a mesma estrutura dos outros agentes:
 Em `memory/feedback_war_room_mode.md`, adicione o novo agente na posição desejada:
 
 ```markdown
-5. **[SECURITY-AUDIT]** → Agente: *Security Auditor*
-   - Analisa vulnerabilidades OWASP Top 10 e conformidade
+7. **[PERF-PROFILER]** → Agente: *Performance Profiler*
+   - Analisa performance, N+1 queries e gargalos de memória
 
-6. **[LEAD-REPORT]** → Agente: *Quality & Stability Lead (EdTech)*
+8. **[LEAD-REPORT]** → Agente: *Quality & Stability Lead (EdTech)*
    - Consolida descobertas e prioriza ações imediatas
 ```
 
@@ -130,7 +130,7 @@ Em `memory/feedback_war_room_mode.md`, adicione o novo agente na posição desej
 ### Passo 3: Instale o novo agente
 
 ```bash
-cp agents/06-security-auditor.md ~/.claude/agents/
+cp agents/07-performance-profiler.md ~/.claude/agents/
 ```
 
 ---

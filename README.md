@@ -2,24 +2,24 @@
 
 # Claude War Room
 
-**Orquestrador de 5 agentes especializados para análise 360° de features com Claude Code.**
+**Orquestrador de 6 agentes especializados para análise 360° de features com Claude Code.**
 
 [![CI](https://github.com/RandMelville/claude-war-room/actions/workflows/validate.yml/badge.svg)](https://github.com/RandMelville/claude-war-room/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
-[![Agents](https://img.shields.io/badge/Agents-5-blue)]()
+[![Agents](https://img.shields.io/badge/Agents-6-blue)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![PT-BR](https://img.shields.io/badge/lang-PT--BR-green)]()
 
 **🇧🇷 Português** | [🇺🇸 English](README.en.md)
 
-**1 comando. 5 perspectivas. 1 relatório executivo.**
+**1 comando. 6 perspectivas. 1 relatório executivo.**
 
 </div>
 
 ---
 
-> O **Modo War Room** é uma estratégia de orquestração que executa sequencialmente 5 agentes de IA especializados, cada um analisando uma dimensão diferente do seu código. O resultado é um relatório executivo completo com falhas detectadas, severidades e plano de ação.
+> O **Modo War Room** é uma estratégia de orquestração que executa sequencialmente 6 agentes de IA especializados, cada um analisando uma dimensão diferente do seu código. O resultado é um relatório executivo completo com falhas detectadas, severidades e plano de ação.
 
 <table>
 <tr>
@@ -39,11 +39,12 @@
 $ claude
 > ativar modo war room: Sistema de Lançamento de Notas
 
-[1/5] DOC-REVERSE — Mapeando arquitetura e fluxos...
-[2/5] ARQUITETO-INFRA — Identificando gargalos de escala...
-[3/5] DEV-CONCURRENCY — Caçando race conditions...
-[4/5] SRE-CHAOS — Simulando cenários de falha...
-[5/5] LEAD-REPORT — Consolidando relatório executivo...
+[1/6] DOC-REVERSE — Mapeando arquitetura e fluxos...
+[2/6] ARQUITETO-INFRA — Identificando gargalos de escala...
+[3/6] DEV-CONCURRENCY — Caçando race conditions...
+[4/6] SRE-CHAOS — Simulando cenários de falha...
+[5/6] SEC-AUDIT — Auditando vulnerabilidades de segurança...
+[6/6] LEAD-REPORT — Consolidando relatório executivo...
 
 Report de Confiança: Índice 🔴 Baixo
 3 itens críticos identificados | Plano de ação gerado
@@ -61,21 +62,24 @@ graph LR
     A2["2. ARQUITETO-INFRA\nEscalabilidade"]
     A3["3. DEV-CONCURRENCY\nConcorrência"]
     A4["4. SRE-CHAOS\nChaos Engineering"]
-    A5["5. LEAD-REPORT\nRelatório Executivo"]
+    A5["5. SEC-AUDIT\nSegurança"]
+    A6["6. LEAD-REPORT\nRelatório Executivo"]
 
     A1 -->|contexto + descobertas| A2
     A2 -->|contexto + descobertas| A3
     A3 -->|contexto + descobertas| A4
     A4 -->|contexto + descobertas| A5
+    A5 -->|contexto + descobertas| A6
 
-    A5 -->|resultado| R["Report de Confiança\nTabela de Severidade\nPlano de Ação"]
+    A6 -->|resultado| R["Report de Confiança\nTabela de Severidade\nPlano de Ação"]
 
     style CMD fill:#1a1a2e,stroke:#e94560,color:#fff
     style A1 fill:#16213e,stroke:#0f3460,color:#fff
     style A2 fill:#16213e,stroke:#0f3460,color:#fff
     style A3 fill:#16213e,stroke:#0f3460,color:#fff
     style A4 fill:#16213e,stroke:#0f3460,color:#fff
-    style A5 fill:#e94560,stroke:#0f3460,color:#fff
+    style A5 fill:#e94560,stroke:#c70039,color:#fff
+    style A6 fill:#e94560,stroke:#0f3460,color:#fff
     style R fill:#0f3460,stroke:#e94560,color:#fff
 ```
 
@@ -83,7 +87,7 @@ Cada agente **recebe o contexto e as descobertas dos anteriores**, construindo u
 
 ---
 
-## Os 5 Agentes
+## Os 6 Agentes
 
 | # | Alias | Agente | O que faz | O que produz |
 |---|-------|--------|-----------|--------------|
@@ -91,7 +95,8 @@ Cada agente **recebe o contexto e as descobertas dos anteriores**, construindo u
 | 2 | `ARQUITETO-INFRA` | Cloud Scalability Architect | Identifica gargalos de infra, limites de conexão, falta de cache | Inventário de gargalos + simulação de carga |
 | 3 | `DEV-CONCURRENCY` | Concurrency & Distributed Systems Specialist | Caça race conditions, deadlocks e inconsistências de dados | Mapa de pontos de escrita + recomendações de locking |
 | 4 | `SRE-CHAOS` | Chaos Engineer SRE | Simula falhas catastróficas e avalia resiliência | Catálogo de cenários de desastre + plano de resiliência |
-| 5 | `LEAD-REPORT` | Quality & Stability Lead | Consolida tudo em linguagem de negócio | Report de Confiança com plano de ação priorizado |
+| 5 | `SEC-AUDIT` | Security Auditor | Audita OWASP Top 10, secrets, auth bypass e conformidade LGPD | Catálogo de vulnerabilidades + plano de remediação |
+| 6 | `LEAD-REPORT` | Quality & Stability Lead | Consolida tudo em linguagem de negócio | Report de Confiança com plano de ação priorizado |
 
 ---
 
@@ -115,7 +120,7 @@ chmod +x install.sh
 ```
 
 O script vai:
-1. Copiar os 5 agentes para `~/.claude/agents/`
+1. Copiar os 6 agentes para `~/.claude/agents/`
 2. Configurar o trigger de orquestração na memória do projeto
 
 ### Manual
@@ -140,7 +145,7 @@ cp memory/feedback_war_room_mode.md "$PROJECT_DIR/"
 3. **Atualize o MEMORY.md** do seu projeto (crie se não existir):
 
 ```markdown
-- [feedback_war_room_mode.md](./feedback_war_room_mode.md) - Comando "ativar modo war room: [FEATURE]" orquestra 5 agentes sequenciais
+- [feedback_war_room_mode.md](./feedback_war_room_mode.md) - Comando "ativar modo war room: [FEATURE]" orquestra 6 agentes sequenciais
 ```
 
 ---
@@ -163,9 +168,9 @@ ativar modo war room: Autenticação e Autorização
 ativar modo war room: API de Relatórios
 ```
 
-3. Aguarde a execução sequencial dos 5 agentes
+3. Aguarde a execução sequencial dos 6 agentes
 4. O relatório final será apresentado automaticamente pelo último agente
-5. Os **5 documentos Markdown** serão gerados automaticamente na pasta `war-room/[feature]/` do seu projeto
+5. Os **6 documentos Markdown** serão gerados automaticamente na pasta `war-room/[feature]/` do seu projeto
 
 ---
 
@@ -177,11 +182,12 @@ ativar modo war room: API de Relatórios
 2. **ARQUITETO-INFRA** — Mapa de gargalos com pontos de ruptura, simulação de carga com 1.000 acessos simultâneos
 3. **DEV-CONCURRENCY** — Cenários de race condition com sequências temporais (T1, T2), análise de transações e locking
 4. **SRE-CHAOS** — Catálogo de desastres com sequência de falha (T+0, T+30s, T+5min), análise de timeouts e circuit breakers
-5. **LEAD-REPORT** — Report de Confiança consolidado
+5. **SEC-AUDIT** — Catálogo de vulnerabilidades OWASP, auditoria de secrets/auth, vetores de ataque e conformidade LGPD
+6. **LEAD-REPORT** — Report de Confiança consolidado
 
 ### Documentos gerados automaticamente
 
-Ao final da execução, **5 arquivos Markdown** são criados automaticamente na pasta `war-room/[feature]/` do seu projeto:
+Ao final da execução, **6 arquivos Markdown** são criados automaticamente na pasta `war-room/[feature]/` do seu projeto:
 
 ```
 war-room/
@@ -190,10 +196,18 @@ war-room/
     ├── 02-arquiteto-infra-escalabilidade.md
     ├── 03-dev-concurrency-race-conditions.md
     ├── 04-sre-chaos-cenarios-desastre.md
-    └── 05-lead-report-relatorio-executivo.md
+    ├── 05-sec-audit-seguranca.md
+    └── 06-lead-report-relatorio-executivo.md
 ```
 
 Os documentos podem ser compartilhados diretamente via GitHub, Confluence, Notion ou qualquer viewer Markdown — os diagramas Mermaid renderizam corretamente.
+
+Ou gere um **report HTML interativo** com o script incluído:
+
+```bash
+./generate-report.sh war-room/sistema-de-notas/
+open war-room/sistema-de-notas/report.html
+```
 
 ### Formato do Report Final
 
@@ -214,12 +228,14 @@ claude-war-room/
 ├── README.md                     # Este arquivo
 ├── LICENSE                       # MIT
 ├── install.sh                    # Script de instalação
+├── generate-report.sh            # Gerador de report HTML interativo
 ├── agents/
 │   ├── 01-reverse-engineering-architect.md
 │   ├── 02-scalability-architect.md
 │   ├── 03-concurrency-specialist.md
 │   ├── 04-chaos-engineer-sre.md
-│   └── 05-quality-stability-lead.md
+│   ├── 05-security-auditor.md
+│   └── 06-quality-stability-lead.md
 ├── memory/
 │   └── feedback_war_room_mode.md
 └── docs/
@@ -242,13 +258,35 @@ Resumo rápido:
 
 ---
 
-## Por que 5 agentes? Por que sequencial?
+## Report HTML Interativo
 
-**Por que 5 perspectivas diferentes:**
-Cada agente tem um "viés" proposital — o arquiteto pensa em fluxos, o SRE pensa em falhas, o especialista em concorrência pensa em race conditions. Juntos, cobrem pontos cegos que um único prompt não conseguiria.
+Após a execução do War Room, gere um report HTML com navegação, diagramas Mermaid renderizados e cores de severidade:
+
+```bash
+# Gera report.html dentro da pasta do war-room
+./generate-report.sh war-room/sistema-de-notas/
+
+# Ou especifique o caminho de saída
+./generate-report.sh war-room/sistema-de-notas/ ~/Desktop/report.html
+```
+
+O HTML gerado tem **CSS inline** e inclui:
+
+- Sidebar de navegação entre agentes
+- Diagramas Mermaid renderizados no browser
+- Tabelas com cores de severidade (vermelho/amarelo/verde)
+- Toggle dark/light theme
+- Responsivo e pronto para impressão
+
+---
+
+## Por que 6 agentes? Por que sequencial?
+
+**Por que 6 perspectivas diferentes:**
+Cada agente tem um "viés" proposital — o arquiteto pensa em fluxos, o SRE pensa em falhas, o especialista em concorrência pensa em race conditions, o auditor de segurança pensa como um atacante. Juntos, cobrem pontos cegos que um único prompt não conseguiria.
 
 **Por que sequencial e não paralelo:**
-Cada agente constrói sobre as descobertas do anterior. O SRE de Chaos, por exemplo, usa o mapa de infraestrutura do Arquiteto de Escalabilidade para saber quais pontos de falha testar. O Lead de Qualidade usa TODAS as descobertas anteriores para priorizar.
+Cada agente constrói sobre as descobertas do anterior. O SRE de Chaos, por exemplo, usa o mapa de infraestrutura do Arquiteto de Escalabilidade para saber quais pontos de falha testar. O Auditor de Segurança usa o mapa de superfície para saber onde atacar. O Lead de Qualidade usa TODAS as descobertas anteriores para priorizar.
 
 ---
 
@@ -259,7 +297,7 @@ Contribuições são bem-vindas! Leia o [Guia de Contribuição](CONTRIBUTING.md
 Algumas ideias:
 
 - Traduzir agentes para inglês
-- Criar agentes adicionais (ex: Security Auditor, Performance Profiler)
+- Criar agentes adicionais (ex: Performance Profiler, Accessibility Auditor)
 - Melhorar os templates de saída
 - Adicionar exemplos reais (anonimizados)
 - Adaptar para novos domínios (FinTech, HealthTech, SaaS)

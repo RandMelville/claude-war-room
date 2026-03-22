@@ -82,21 +82,23 @@ jobs:
             exit 1
           fi
 
-          # Verifica que os 5 agentes estão listados
-          agents_count=$(grep -c "^\d\.\|^[0-9]\." "$FILE" || true)
-          if [ "$agents_count" -lt 5 ]; then
-            echo "AVISO: Esperados 5 agentes no pipeline, encontrados: $agents_count"
+          # Verifica que os 6 agentes estão listados
+          agents_count=$(grep -c "^[0-9]\." "$FILE" || true)
+          if [ "$agents_count" -lt 6 ]; then
+            echo "AVISO: Esperados 6 agentes no pipeline, encontrados: $agents_count"
           fi
 
           echo "Trigger válido!"
 
-      - name: Verificar install.sh é executável
+      - name: Verificar scripts são executáveis
         run: |
-          if [ ! -x "install.sh" ]; then
-            echo "ERRO: install.sh não tem permissão de execução"
-            exit 1
-          fi
-          echo "install.sh é executável!"
+          for script in install.sh generate-report.sh; do
+            if [ ! -x "$script" ]; then
+              echo "ERRO: $script não tem permissão de execução"
+              exit 1
+            fi
+            echo "$script é executável!"
+          done
 
   lint-markdown:
     name: Lint Markdown
