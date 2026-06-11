@@ -12,18 +12,18 @@
 
 ## Checklist
 
-- [ ] Testei localmente com Claude Code
+- [ ] Testei localmente com Claude Code (plugin instalado a partir do checkout)
 - [ ] Agentes têm frontmatter YAML válido (`name`, `description`, `model`, `tools`)
 - [ ] Agentes seguem a estrutura obrigatória (Role, Protocolo, Estrutura de Resposta, Persona, Diretrizes)
+- [ ] `.claude-plugin/plugin.json` atualizado (se adicionei/removi agente ou command)
+- [ ] `schemas/findings.schema.json` atualizado (se adicionei agente novo)
 - [ ] Documentação atualizada (se aplicável)
-- [ ] `install.sh` atualizado (se adicionei/removi agente)
-- [ ] `feedback_war_room_mode.md` atualizado (se alterei o pipeline)
 
 ## Como Testar
 
 <!-- Descreva como reproduzir/testar a mudança -->
 
-1. Instale os agentes: `./install.sh --force`
+1. Instale o plugin: `/plugin marketplace add <caminho-do-checkout>` + `/plugin install claude-war-room`
 2. Abra Claude Code em um projeto
-3. Execute: `ativar modo war room: [feature]`
+3. Execute: `/warroom` ou `/warroom-audit [feature]`
 4. Verifique que...

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/RandMelville/claude-war-room/schemas/findings.schema.json",
+  "title": "War Room Findings",
+  "description": "Achados estruturados de uma auditoria do War Room, persistidos em .warroom/findings.json. É o data model que um dashboard (SaaS futuro) renderiza e que uma visão de portfólio agrega.",
+  "type": "object",
+  "required": ["warroom_version", "generated_at", "scope", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "warroom_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "scope": {
+      "type": "string",
+      "description": "Feature/módulo/caminho auditado."
+    },
+    "confidence_index": {
+      "type": "string",
+      "enum": ["low", "moderate", "high"],
+      "description": "Índice de Confiança consolidado pelo quality-stability-lead."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "agent", "title", "severity", "category", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador estável do achado (ex: SEC-001, CONC-002)."
+          },
+          "agent": {
+            "type": "string",
+            "enum": [
+              "recon",
+              "scalability-architect",
+              "concurrency-specialist",
+              "chaos-engineer-sre",
+              "security-auditor",
+              "quality-stability-lead"
+            ],
+            "description": "Agente que originou o achado."
+          },
+          "title": {
+            "type": "string",
+            "description": "Título técnico curto do problema."
+          },
+          "business_impact": {
+            "type": "string",
+            "description": "Impacto traduzido para linguagem de negócio (o que o usuário/time sente)."
+          },
+          "technical_risk": {
+            "type": "string",
+            "description": "Risco técnico subjacente."
+          },
+          "severity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "Severidade 1-10. Calibrada por rubrica a partir da v2.1."
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoria do achado (ex: OWASP A01, race-condition, bottleneck, resilience, tech-debt)."
+          },
+          "file": {
+            "type": ["string", "null"],
+            "description": "Arquivo da evidência, relativo à raiz do repo-alvo."
+          },
+          "line": {
+            "type": ["integer", "null"],
+            "description": "Linha da evidência."
+          },
+          "evidence": {
+            "type": ["string", "null"],
+            "description": "Trecho ou descrição que sustenta o achado."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "fixed", "false_positive"],
+            "default": "open",
+            "description": "Estado do achado. Permite acompanhar correções entre execuções."
+          },
+          "verified": {
+            "type": "boolean",
+            "default": false,
+            "description": "Se o achado sobreviveu à verificação adversarial (agente verifier, v2.1)."
+          }
+        }
+      }
+    }
+  }
+}

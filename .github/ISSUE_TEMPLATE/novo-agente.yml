@@ -22,7 +22,7 @@ body:
     attributes:
       label: Propósito
       description: O que este agente faz? Qual perspectiva única ele traz?
-      placeholder: "Descreva o foco de análise do agente e por que ele complementa os 5 existentes"
+      placeholder: "Descreva o foco de análise do agente e por que ele complementa os existentes"
     validations:
       required: true
 
@@ -30,14 +30,11 @@ body:
     id: posicao
     attributes:
       label: Posição no Pipeline
-      description: Onde ele deveria rodar na sequência?
+      description: Onde ele deveria rodar no fluxo map → fan-out → reduce?
       options:
-        - Antes do DOC-REVERSE (1º)
-        - Entre DOC-REVERSE e ARQUITETO-INFRA (2º)
-        - Entre ARQUITETO-INFRA e DEV-CONCURRENCY (3º)
-        - Entre DEV-CONCURRENCY e SRE-CHAOS (4º)
-        - Entre SRE-CHAOS e LEAD-REPORT (5º)
-        - Depois do LEAD-REPORT (último)
+        - "Especialista (roda em paralelo no fan-out, como Infra/Concorrência/Chaos/Security)"
+        - "Mapeamento (antes do fan-out, como o Recon)"
+        - "Consolidação (reduce, como o Quality & Stability Lead)"
     validations:
       required: true
 

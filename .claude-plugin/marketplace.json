@@ -1,0 +1,29 @@
+{
+  "name": "claude-war-room",
+  "owner": {
+    "name": "Randerson Melville",
+    "url": "https://github.com/RandMelville"
+  },
+  "plugins": [
+    {
+      "name": "claude-war-room",
+      "source": "./",
+      "description": "Contexto instantâneo e confiável de qualquer codebase legado — engenharia reversa em doc viva, e um War Room multi-agente para caçar os riscos.",
+      "author": {
+        "name": "Randerson Melville"
+      },
+      "repository": "https://github.com/RandMelville/claude-war-room",
+      "license": "MIT",
+      "keywords": [
+        "code-review",
+        "reverse-engineering",
+        "documentation",
+        "legacy-code",
+        "architecture",
+        "security-audit",
+        "multi-agent",
+        "onboarding"
+      ]
+    }
+  ]
+}

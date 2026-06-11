@@ -2,61 +2,52 @@
 
 ## Visão Geral
 
-O Modo War Room é um **orquestrador sequencial de agentes** implementado como uma configuração de memória do Claude Code. Não é um framework ou biblioteca — são arquivos de configuração que transformam o Claude Code em um pipeline de análise automatizada.
+O War Room é um **plugin do Claude Code** que orquestra agentes especializados via **slash commands**. Não é um framework ou biblioteca — são arquivos de configuração (`commands/` + `agents/`) que transformam o Claude Code num pipeline de análise automatizada e **persistente** (`.warroom/`).
+
+Dois comandos:
+- `/warroom` → roda o **Recon** (engenharia reversa) e grava a doc viva.
+- `/warroom-audit` → roda o War Room completo: Recon + 4 especialistas **em paralelo** + consolidação.
 
 ## Padrão de Orquestração
 
 ```mermaid
-sequenceDiagram
-    participant U as Usuário
-    participant CC as Claude Code
-    participant A1 as DOC-REVERSE
-    participant A2 as ARQUITETO-INFRA
-    participant A3 as DEV-CONCURRENCY
-    participant A4 as SRE-CHAOS
-    participant A5 as SEC-AUDIT
-    participant A6 as LEAD-REPORT
-
-    U->>CC: ativar modo war room: [FEATURE]
-    CC->>A1: Analise o código desta feature
-    A1-->>CC: Documento de Arquitetura + Fluxos
-    CC->>A2: Analise escalabilidade (com contexto de A1)
-    A2-->>CC: Inventário de Gargalos + Simulação
-    CC->>A3: Analise concorrência (com contexto de A1+A2)
-    A3-->>CC: Race Conditions + Locking
-    CC->>A4: Simule falhas (com contexto de A1+A2+A3)
-    A4-->>CC: Cenários de Desastre
-    CC->>A5: Audite segurança (com contexto de A1+A2+A3+A4)
-    A5-->>CC: Vulnerabilidades + Remediação
-    CC->>A6: Consolide tudo (com contexto de A1+A2+A3+A4+A5)
-    A6-->>U: Report de Confiança Final
+graph TD
+    CMD["/warroom-audit [escopo]"] --> R[RECON — mapa do território]
+    R --> A2[ARQUITETO-INFRA]
+    R --> A3[DEV-CONCURRENCY]
+    R --> A4[SRE-CHAOS]
+    R --> A5[SEC-AUDIT]
+    A2 --> L[LEAD-REPORT]
+    A3 --> L
+    A4 --> L
+    A5 --> L
+    L --> OUT[".warroom/ — architecture.md · audit/ · findings.json"]
 ```
 
-### Por que sequencial?
+### Por que map → fan-out paralelo → reduce?
 
-A ordem não é arbitrária:
+A dependência real é **um-para-muitos**, não uma cadeia:
 
-1. **DOC-REVERSE primeiro** — Cria o mapa do território. Sem entender a arquitetura, os outros agentes não sabem o que analisar.
-2. **ARQUITETO-INFRA segundo** — Identifica os limites físicos do sistema. O especialista em concorrência precisa saber onde estão os gargalos de conexão.
-3. **DEV-CONCURRENCY terceiro** — Com o mapa de fluxos (A1) e os pontos de pressão (A2), pode simular race conditions nos pontos certos.
-4. **SRE-CHAOS quarto** — Usa todos os dados anteriores para simular falhas realistas, não hipotéticas.
-5. **SEC-AUDIT quinto** — Com o mapa completo de arquitetura, gargalos, concorrência e falhas, audita segurança sabendo exatamente onde estão as superfícies de ataque.
-6. **LEAD-REPORT último** — Precisa de TODAS as descobertas para priorizar por impacto de negócio.
+1. **Recon primeiro (map)** — Cria o mapa do território. Sem entender a arquitetura, os outros agentes não sabem o que analisar. **Todos** os especialistas dependem dele.
+2. **4 especialistas em paralelo (fan-out)** — Infra, concorrência, chaos e segurança são **independentes entre si**: cada um re-analisa o mesmo mapa sob um viés próprio. Rodar em paralelo corta tempo e **evita estourar a janela de contexto** que o modo sequencial do v1 causava em codebases reais.
+3. **Lead por último (reduce)** — Precisa de TODAS as descobertas para priorizar por impacto de negócio e emitir o `findings.json`.
+
+> No v1 os 6 agentes rodavam em sequência na mesma conversa, justamente o que esgotava o contexto. O v2 troca a cadeia por um fan-out paralelo.
 
 ### Passagem de Contexto
 
-O mecanismo é simples: todos os agentes rodam **na mesma conversa do Claude Code**. A saída de cada agente fica no contexto da conversa, e o próximo agente tem acesso automático a ela.
-
-O arquivo `feedback_war_room_mode.md` define a regra:
-> *"Processar sequencialmente: cada agente recebe o contexto + descobertas dos anteriores"*
+O comando `/warroom-audit` (em `commands/warroom-audit.md`) orquestra o fluxo: lê o
+`.warroom/architecture.md` produzido pelo Recon e o passa como contexto às **4 chamadas paralelas**
+da ferramenta `Agent` (uma por especialista). As 4 saídas, mais o mapa, são então passadas ao
+`quality-stability-lead` para consolidação.
 
 ---
 
 ## Deep Dive: Cada Agente
 
-### Agente 1: DOC-REVERSE (Reverse Engineering & Software Architect)
+### Agente 1: Recon (Reverse Engineering & Software Architect)
 
-**Arquivo:** `agents/01-reverse-engineering-architect.md`
+**Arquivo:** `agents/recon.md`
 
 **Propósito:** Criar a documentação técnica que nunca foi escrita. É o "cartógrafo" do War Room.
 
@@ -83,7 +74,7 @@ O arquivo `feedback_war_room_mode.md` define a regra:
 
 ### Agente 2: ARQUITETO-INFRA (Cloud Scalability Architect)
 
-**Arquivo:** `agents/02-scalability-architect.md`
+**Arquivo:** `agents/scalability-architect.md`
 
 **Propósito:** Encontrar onde o sistema vai quebrar sob carga. É o "engenheiro de estresse" do War Room.
 
@@ -106,7 +97,7 @@ O arquivo `feedback_war_room_mode.md` define a regra:
 
 ### Agente 3: DEV-CONCURRENCY (Concurrency & Distributed Systems Specialist)
 
-**Arquivo:** `agents/03-concurrency-specialist.md`
+**Arquivo:** `agents/concurrency-specialist.md`
 
 **Propósito:** Caçar race conditions e deadlocks antes que eles corrompam dados. É o "paranóico de dados" do War Room.
 
@@ -130,7 +121,7 @@ O arquivo `feedback_war_room_mode.md` define a regra:
 
 ### Agente 4: SRE-CHAOS (Chaos Engineer SRE)
 
-**Arquivo:** `agents/04-chaos-engineer-sre.md`
+**Arquivo:** `agents/chaos-engineer-sre.md`
 
 **Propósito:** Simular o pior dia possível. É o "pessimista profissional" do War Room.
 
@@ -153,12 +144,12 @@ O arquivo `feedback_war_room_mode.md` define a regra:
 
 ### Agente 5: SEC-AUDIT (Security Auditor)
 
-**Arquivo:** `agents/05-security-auditor.md`
+**Arquivo:** `agents/security-auditor.md`
 
 **Propósito:** Encontrar vulnerabilidades exploráveis antes que um atacante as encontre. É o "hacker ético" do War Room.
 
 **Fases de execução:**
-1. **Reconhecimento de Superfície de Ataque** — Usa o mapa do DOC-REVERSE para identificar pontos de entrada, fluxos de auth e dados sensíveis.
+1. **Reconhecimento de Superfície de Ataque** — Usa o mapa do Recon para identificar pontos de entrada, fluxos de auth e dados sensíveis.
 2. **Análise de Vulnerabilidades** — Para cada ponto de entrada: validação de input, verificação de autorização, criptografia de dados, vazamento de informações em erros.
 3. **Entrega** — Catálogo de vulnerabilidades com vetores de ataque e plano de remediação.
 
@@ -177,7 +168,7 @@ O arquivo `feedback_war_room_mode.md` define a regra:
 
 ### Agente 6: LEAD-REPORT (Quality & Stability Lead)
 
-**Arquivo:** `agents/06-quality-stability-lead.md`
+**Arquivo:** `agents/quality-stability-lead.md`
 
 **Propósito:** Traduzir tudo para linguagem de negócio e priorizar por impacto. É o "tradutor" do War Room.
 
@@ -216,7 +207,8 @@ Todos os agentes usam o mesmo conjunto de ferramentas:
 
 ## Limitações Conhecidas
 
-1. **Contexto da conversa** — Em codebases muito grandes, os 6 agentes podem esgotar a janela de contexto. Recomendação: foque em features/módulos específicos.
-2. **Modelo** — Todos os agentes usam `model: opus`. Sonnet funciona, mas com menor profundidade de análise.
-3. **Leitura estática** — Os agentes analisam código estático. Não executam testes, não acessam banco de dados em produção, não fazem profiling real.
-4. **Domínio** — Os templates vêm otimizados para EdTech. Para outros domínios, veja [CUSTOMIZATION.md](CUSTOMIZATION.md).
+1. **Contexto** — O fan-out paralelo alivia muito o estouro de contexto do v1, mas codebases gigantes ainda se beneficiam de focar com o argumento de escopo (ex: `/warroom-audit src/billing`).
+2. **Modelo** — O **Recon** usa `model: sonnet` (barato, alta frequência); os 4 especialistas e o Lead usam `model: opus` (profundidade onde importa). Ajustável no frontmatter de cada agente.
+3. **Leitura estática** — Os agentes analisam código estático. Não executam testes, não acessam banco em produção, não fazem profiling real.
+4. **Achados não verificados** — Na v2.0 os achados saem com `verified: false`. A verificação adversarial que mata falso-positivo chega na v2.1.
+5. **Domínio** — O core é neutro ao domínio. Para reintroduzir vocabulário específico, use um domain pack (ex: [`packs/edtech`](../packs/edtech/README.md)). Veja também [CUSTOMIZATION.md](CUSTOMIZATION.md).
