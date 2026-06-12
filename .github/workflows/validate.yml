@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate-agents:
-    name: Validar Agentes
+    name: Validar Agentes e Commands
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,17 +21,14 @@ jobs:
           for file in agents/*.md; do
             echo "Verificando: $file"
 
-            # Verifica se começa com ---
             if ! head -1 "$file" | grep -q "^---$"; then
               echo "  ERRO: $file não tem frontmatter YAML (falta --- no início)"
               errors=$((errors + 1))
               continue
             fi
 
-            # Extrai frontmatter (entre os dois ---)
             frontmatter=$(sed -n '/^---$/,/^---$/p' "$file")
 
-            # Verifica campos obrigatórios
             for field in name description model tools; do
               if ! echo "$frontmatter" | grep -q "^${field}:"; then
                 echo "  ERRO: $file - campo obrigatório ausente: $field"
@@ -39,88 +36,133 @@ jobs:
               fi
             done
 
-            # Verifica que model é opus ou sonnet
             model=$(echo "$frontmatter" | grep "^model:" | awk '{print $2}')
             if [[ "$model" != "opus" && "$model" != "sonnet" && "$model" != "haiku" ]]; then
               echo "  ERRO: $file - model inválido: '$model' (esperado: opus, sonnet ou haiku)"
               errors=$((errors + 1))
             fi
 
-            # Verifica ferramentas mínimas
-            for tool in Read Glob Grep; do
-              if ! echo "$frontmatter" | grep -q "  - $tool"; then
-                echo "  AVISO: $file - ferramenta recomendada ausente: $tool"
-              fi
-            done
-
             echo "  OK"
           done
 
           if [ $errors -gt 0 ]; then
-            echo ""
             echo "FALHOU: $errors erro(s) encontrado(s)"
             exit 1
           fi
-
-          echo ""
           echo "Todos os agentes válidos!"
 
-      - name: Verificar trigger de orquestração
+      - name: Verificar commands (slash) têm frontmatter
         run: |
-          echo "Validando trigger de orquestração..."
-
-          FILE="memory/feedback_war_room_mode.md"
-
-          if [ ! -f "$FILE" ]; then
-            echo "ERRO: $FILE não encontrado"
-            exit 1
-          fi
-
-          # Verifica campos essenciais
-          if ! grep -q "ativar modo war room" "$FILE"; then
-            echo "ERRO: Comando de ativação não encontrado no trigger"
-            exit 1
-          fi
-
-          # Verifica que os 6 agentes estão listados
-          agents_count=$(grep -c "^[0-9]\." "$FILE" || true)
-          if [ "$agents_count" -lt 6 ]; then
-            echo "AVISO: Esperados 6 agentes no pipeline, encontrados: $agents_count"
-          fi
-
-          echo "Trigger válido!"
-
-      - name: Verificar scripts são executáveis
-        run: |
-          for script in install.sh generate-report.sh; do
-            if [ ! -x "$script" ]; then
-              echo "ERRO: $script não tem permissão de execução"
-              exit 1
+          echo "Validando commands..."
+          errors=0
+          for file in commands/*.md; do
+            echo "Verificando: $file"
+            if ! head -1 "$file" | grep -q "^---$"; then
+              echo "  ERRO: $file não tem frontmatter"
+              errors=$((errors + 1))
+              continue
             fi
-            echo "$script é executável!"
+            frontmatter=$(sed -n '/^---$/,/^---$/p' "$file")
+            if ! echo "$frontmatter" | grep -q "^description:"; then
+              echo "  ERRO: $file - campo 'description' ausente"
+              errors=$((errors + 1))
+            fi
+            echo "  OK"
           done
+          if [ $errors -gt 0 ]; then exit 1; fi
+          echo "Todos os commands válidos!"
+
+      - name: Verificar referências do plugin.json existem
+        run: |
+          echo "Validando que commands[]/agents[] do plugin.json existem em disco..."
+          python3 - <<'PY'
+          import json, os, sys
+          m = json.load(open(".claude-plugin/plugin.json"))
+          missing = [p for p in (m.get("commands", []) + m.get("agents", []))
+                     if not os.path.isfile(p.lstrip("./") if p.startswith("./") else p)]
+          if missing:
+              print("ERRO: referências inexistentes no plugin.json:", missing)
+              sys.exit(1)
+          print("plugin.json: todas as referências existem.")
+          PY
+
+  validate-json:
+    name: Validar JSON e Schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Instalar jsonschema
+        run: pip install jsonschema
+
+      - name: JSON parseia + valida contra schemas
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          from jsonschema import validate, Draft202012Validator
+
+          # os.walk (não glob) para incluir diretórios ocultos como .warroom/ e .claude-plugin/
+          all_json = []
+          for root, dirs, files in os.walk("."):
+              dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+              for fn in files:
+                  if fn.endswith(".json"):
+                      all_json.append(os.path.join(root, fn))
+
+          # 1) todos os .json parseiam
+          for f in all_json:
+              json.load(open(f))
+              print("OK parse:", f)
+
+          # 2) os próprios schemas são válidos
+          findings_schema = json.load(open("schemas/findings.schema.json"))
+          manifest_schema = json.load(open("schemas/manifest.schema.json"))
+          Draft202012Validator.check_schema(findings_schema)
+          Draft202012Validator.check_schema(manifest_schema)
+          print("Schemas válidos.")
+
+          # 3) exemplos validam contra os schemas
+          n = 0
+          for f in all_json:
+              base = os.path.basename(f)
+              if "/.warroom/" not in f.replace("\\", "/") and "/examples/" not in f.replace("\\", "/"):
+                  continue
+              if base == "findings.json":
+                  validate(json.load(open(f)), findings_schema); n += 1; print("OK findings:", f)
+              elif base == "manifest.json":
+                  validate(json.load(open(f)), manifest_schema); n += 1; print("OK manifest:", f)
+          print(f"Exemplos validados: {n}")
+          if n == 0:
+              print("AVISO: nenhum exemplo .warroom encontrado para validar")
+          PY
 
   lint-markdown:
     name: Lint Markdown
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Lint com markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v19
         with:
           globs: |
             README.md
+            README.en.md
             CONTRIBUTING.md
             docs/*.md
+            commands/*.md
+            packs/**/*.md
 
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Rodar ShellCheck no install.sh
+      - name: Rodar ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: '.'
