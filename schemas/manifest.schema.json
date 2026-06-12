@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/RandMelville/claude-war-room/schemas/manifest.schema.json",
+  "title": "War Room Manifest",
+  "description": "Metadados de uma execução do War Room, persistidos em .warroom/manifest.json no repo-alvo. Base para detecção de drift e para sincronização futura com o SaaS.",
+  "type": "object",
+  "required": ["warroom_version", "generated_at", "scope", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "warroom_version": {
+      "type": "string",
+      "description": "Versão do plugin que gerou esta execução (ex: 2.0.0)."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp ISO-8601 da geração."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["recon", "audit"],
+      "description": "Comando que gerou o artefato: recon (/warroom) ou audit (/warroom-audit)."
+    },
+    "model": {
+      "type": "string",
+      "description": "Modelo usado na análise (ex: sonnet, opus)."
+    },
+    "scope": {
+      "type": "string",
+      "description": "Escopo analisado: caminho relativo (ex: src/billing) ou '.' para o repo inteiro."
+    },
+    "commit_sha": {
+      "type": ["string", "null"],
+      "description": "SHA do commit analisado (git rev-parse HEAD), ou null se não for um repo git."
+    },
+    "files": {
+      "type": "array",
+      "description": "Arquivos lidos durante a análise, com hash — usado para detectar drift em re-execuções.",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Caminho relativo à raiz do repo-alvo."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 do conteúdo do arquivo no momento da análise."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,182 +1,83 @@
 # Personalização do War Room
 
-Os agentes vêm configurados para o domínio **EdTech** (plataformas educacionais), mas a estratégia de orquestração funciona para qualquer sistema de software. Este guia explica como adaptar para o seu contexto.
+O core dos agentes é **neutro ao domínio**. A orquestração (`commands/`) funciona para qualquer
+sistema. Este guia mostra como adaptar ao seu contexto.
 
 ---
 
-## 1. Substituição de Termos de Domínio
+## 1. Domain Packs (em vez de find-and-replace)
 
-Os agentes usam termos EdTech em suas análises. Para adaptar, faça find-and-replace nos arquivos de agente:
+No v1 você editava os agentes manualmente para reintroduzir termos de domínio. No v2, isso virou um
+**domain pack**: um overlay opcional de termos, métricas de escala e regulação.
 
-| Termo EdTech | Substitua por (seu domínio) | Onde aparece |
-|-------------|-------------------------------|--------------|
-| escolas | seus clientes/organizações | Todos os agentes |
-| professores | seus usuários principais | Agentes 3 e 5 |
-| alunos | seus usuários secundários | Agentes 3 e 5 |
-| notas | seus dados críticos | Agentes 3 e 5 |
-| frequência, matrículas | seus registros transacionais | Agente 5 |
-| período de provas | seu evento de pico | Agentes 4 e 5 |
-| 1.000 escolas simultâneas | seu volume-alvo | Agente 2 |
-| dados educacionais | dados do seu domínio | Agentes 3 e 5 |
-| calendário escolar | seu calendário operacional | Agente 4 |
+- Veja [`packs/edtech`](../packs/edtech/README.md) como exemplo e template.
+- Para ativar, cole o bloco do pack no `CLAUDE.md` do repositório-alvo (ou passe como contexto ao
+  rodar `/warroom` / `/warroom-audit`). Os agentes têm a diretriz de incorporar o pack ativo.
 
-### Exemplo: Adaptando para FinTech
+Para criar um pack novo (ex: FinTech), copie `packs/edtech/` para `packs/fintech/` e troque:
+
+| Genérico (core)       | FinTech                         |
+|-----------------------|---------------------------------|
+| usuário / cliente     | operador / correntista          |
+| pedido / transação    | transação financeira / boleto   |
+| registro crítico      | lançamento, saldo               |
+| pico de carga         | fechamento mensal               |
+| PII / dados sensíveis  | dados financeiros (PCI-DSS)     |
+
+---
+
+## 2. Tiers de modelo
+
+Cada agente define `model` no frontmatter. Os defaults do v2:
+
+| Agente                    | Modelo  | Por quê                          |
+|---------------------------|---------|----------------------------------|
+| `recon`                   | sonnet  | Alta frequência, barato          |
+| 4 especialistas + lead    | opus    | Profundidade onde importa        |
+
+Ajuste livremente. Para reduzir custo de uma auditoria, troque `opus` → `sonnet` nos especialistas
+(menor profundidade). Para máxima profundidade no Recon, troque `sonnet` → `opus`.
+
+---
+
+## 3. Focar o escopo
+
+Ambos os comandos aceitam um argumento de escopo — a forma mais barata de controlar custo e contexto:
 
 ```
-escolas → instituições financeiras
-professores → operadores
-alunos → clientes
-notas → transações
-período de provas → fechamento mensal
-1.000 escolas → 500 bancos simultâneos
-dados educacionais → dados financeiros (PCI-DSS)
-```
-
----
-
-## 2. Ajuste de Escala
-
-O Agente 2 (Scalability Architect) simula carga com **1.000 acessos simultâneos**. Para ajustar:
-
-No arquivo `agents/02-scalability-architect.md`, altere:
-- Seção "Simulação de Carga (1.000 Escolas Simultâneas)" → seu volume
-- Diretriz "Sempre simule escala. Pense em 1.000 escolas acessando simultaneamente." → seu cenário
-
----
-
-## 3. Mudança de Modelo
-
-Todos os agentes usam `model: opus` no frontmatter YAML. Para reduzir custo:
-
-```yaml
-# De:
-model: opus
-
-# Para:
-model: sonnet
-```
-
-**Tradeoffs:**
-
-| Aspecto | Opus | Sonnet |
-|---------|------|--------|
-| Profundidade de análise | Muito alta | Alta |
-| Custo por agente | Alto | Médio |
-| Velocidade | Mais lento | Mais rápido |
-| Recomendação | Features críticas | Análises rotineiras |
-
-Dica: Use Opus para o primeiro e último agente (DOC-REVERSE e LEAD-REPORT) e Sonnet para os intermediários.
-
----
-
-## 4. Mudança do Comando de Ativação
-
-O trigger está em `memory/feedback_war_room_mode.md`. Para mudar o comando:
-
-```markdown
-# De (português):
-Quando o usuário digitar **"ativar modo war room: [NOME DA FEATURE]"**
-
-# Para (inglês):
-Quando o usuário digitar **"activate war room: [FEATURE NAME]"**
+/warroom src/billing
+/warroom-audit Autenticação
 ```
 
 ---
 
-## 5. Adicionar um Agente ao Pipeline
+## 4. Adicionar um agente ao pipeline
 
-Para adicionar um 7º agente (ex: Performance Profiler):
+1. Crie `agents/meu-agente.md` (frontmatter com `name` em kebab-case).
+2. Registre o caminho em `.claude-plugin/plugin.json` → `agents[]`.
+3. Adicione o `name` ao enum `agent` em `schemas/findings.schema.json`.
+4. Conecte ao fan-out paralelo em `commands/warroom-audit.md` (mais uma chamada `Agent`).
+5. Atualize `docs/ARCHITECTURE.md` e o README.
 
-### Passo 1: Crie o arquivo do agente
-
-Crie `agents/07-performance-profiler.md` seguindo o padrão:
-
-```yaml
----
-name: "Performance Profiler"
-description: "Descrição do agente..."
-model: opus
-tools:
-  - Read
-  - Glob
-  - Grep
-  - Bash
-  - Agent
----
-```
-
-O corpo do arquivo deve seguir a mesma estrutura dos outros agentes:
-- Role
-- Foco de Análise
-- Protocolo de Execução (Fase 1, 2, 3)
-- Estrutura Obrigatória de Resposta
-- Persona e Tom de Voz
-- Diretrizes Inegociáveis
-
-### Passo 2: Atualize o trigger
-
-Em `memory/feedback_war_room_mode.md`, adicione o novo agente na posição desejada:
-
-```markdown
-7. **[PERF-PROFILER]** → Agente: *Performance Profiler*
-   - Analisa performance, N+1 queries e gargalos de memória
-
-8. **[LEAD-REPORT]** → Agente: *Quality & Stability Lead (EdTech)*
-   - Consolida descobertas e prioriza ações imediatas
-```
-
-**Importante:** O LEAD-REPORT deve ser sempre o **último** agente, pois consolida todas as descobertas.
-
-### Passo 3: Instale o novo agente
-
-```bash
-cp agents/07-performance-profiler.md ~/.claude/agents/
-```
+> O `quality-stability-lead` deve permanecer como **reduce** (último), pois consolida tudo e emite o
+> `findings.json`.
 
 ---
 
-## 6. Remover um Agente do Pipeline
+## 5. Remover/encurtar o pipeline
 
-Para análises mais rápidas, você pode remover agentes intermediários.
+Para auditorias mais rápidas, edite `commands/warroom-audit.md` e dispare menos especialistas no
+fan-out. Exemplos de pipeline mínimo:
 
-### Pipeline mínimo (3 agentes):
-1. DOC-REVERSE — entender o código
-2. DEV-CONCURRENCY — caçar bugs de concorrência
-3. LEAD-REPORT — consolidar
+- **Foco em concorrência:** Recon → `concurrency-specialist` → `quality-stability-lead`
+- **Foco em resiliência:** Recon → `chaos-engineer-sre` → `quality-stability-lead`
 
-### Pipeline focado em resiliência (3 agentes):
-1. DOC-REVERSE — entender o código
-2. SRE-CHAOS — simular falhas
-3. LEAD-REPORT — consolidar
-
-Edite `memory/feedback_war_room_mode.md` removendo os agentes desnecessários.
+O `/warroom` sozinho (só Recon) já é um pipeline mínimo de 1 agente para entender um codebase.
 
 ---
 
-## 7. Adaptando a Estrutura de Resposta
+## 6. Adaptar a estrutura de resposta
 
-Cada agente tem uma seção "Estrutura Obrigatória de Resposta" com templates de tabelas e seções. Você pode:
-
-- **Adicionar seções** — ex: "Compliance Check" para FinTech
-- **Remover seções** — ex: "Glossário de Regras de Negócio" se não for relevante
-- **Alterar tabelas** — adicionar/remover colunas conforme seu contexto
-
-**Recomendação:** Mantenha sempre a seção de diagramas Mermaid — é a parte mais valiosa para comunicação visual.
-
----
-
-## 8. Usando em Inglês
-
-Para uma versão completa em inglês, além de traduzir os arquivos de agente, ajuste:
-
-1. O comando de ativação no trigger
-2. As seções de "Persona e Tom de Voz" (para instruir o agente a responder em inglês)
-3. Os templates de resposta (headers das tabelas, nomes das seções)
-
-Exemplo de persona adaptada:
-```markdown
-## Persona and Tone
-- **Technical, direct, critical and highly analytical.**
-- Don't sugarcoat problems. If the code is fragile, say it clearly.
-- Always reference specific files and line numbers.
-```
+Cada agente tem uma seção "Estrutura Obrigatória de Resposta" com templates de tabelas. Você pode
+adicionar seções (ex: "Compliance Check"), remover as irrelevantes ou alterar colunas. **Mantenha os
+diagramas Mermaid** e a emissão do `findings.json` pelo lead — são as partes mais valiosas.

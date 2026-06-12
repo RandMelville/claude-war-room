@@ -3,3 +3,4 @@
 *.swo
 .env
 node_modules/
+.claude/settings.local.json

@@ -1,5 +1,5 @@
 name: Bug Report
-description: Reporte um problema com os agentes ou script de instalação
+description: Reporte um problema com os agentes, commands ou o plugin
 title: "[Bug] "
 labels: ["bug"]
 body:
@@ -13,13 +13,15 @@ body:
     attributes:
       label: Componente Afetado
       options:
-        - "Agente: DOC-REVERSE (Engenharia Reversa)"
-        - "Agente: ARQUITETO-INFRA (Escalabilidade)"
-        - "Agente: DEV-CONCURRENCY (Concorrência)"
-        - "Agente: SRE-CHAOS (Chaos Engineering)"
-        - "Agente: LEAD-REPORT (Relatório Final)"
-        - "Trigger de Orquestração (feedback_war_room_mode.md)"
-        - "Script de Instalação (install.sh)"
+        - "Agente: Recon (Engenharia Reversa)"
+        - "Agente: Scalability Architect (Escalabilidade)"
+        - "Agente: Concurrency Specialist (Concorrência)"
+        - "Agente: Chaos Engineer / SRE (Resiliência)"
+        - "Agente: Security Auditor (Segurança)"
+        - "Agente: Quality & Stability Lead (Relatório Final)"
+        - "Command: /warroom"
+        - "Command: /warroom-audit"
+        - "Plugin / Instalação"
         - "Documentação"
         - "Outro"
     validations:
@@ -48,7 +50,7 @@ body:
       description: Como reproduzir o problema?
       placeholder: |
         1. Abri Claude Code no projeto X
-        2. Digitei "ativar modo war room: Feature Y"
+        2. Rodei "/warroom-audit Feature Y"
         3. O agente Z produziu...
     validations:
       required: true

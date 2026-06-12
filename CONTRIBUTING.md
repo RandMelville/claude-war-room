@@ -27,7 +27,7 @@ Todo agente deve seguir esta estrutura no arquivo `.md`:
 
 ```yaml
 ---
-name: "Nome do Agente"
+name: meu-agente
 description: "Descrição curta do que o agente faz. Usado pelo Claude Code para decidir quando invocar."
 model: opus
 tools:
@@ -40,9 +40,9 @@ tools:
 ```
 
 **Campos obrigatórios:**
-- `name` — Nome descritivo do agente
+- `name` — slug **kebab-case** (deve casar com o nome usado em `commands/` e no enum de `agent` em `schemas/findings.schema.json`)
 - `description` — O que faz e quando usar (o Claude Code usa isso para routing)
-- `model` — `opus` (recomendado), `sonnet` ou `haiku`
+- `model` — `opus`, `sonnet` ou `haiku` (Recon usa `sonnet`; especialistas usam `opus`)
 - `tools` — Lista de ferramentas que o agente pode usar
 
 ### Corpo do Agente (obrigatório)
@@ -84,9 +84,10 @@ Seções que todo agente deve ter:
 
 ## Como Testar um Agente
 
-1. Copie o agente para `~/.claude/agents/`:
-   ```bash
-   cp agents/meu-agente.md ~/.claude/agents/
+1. Instale o plugin a partir do seu checkout local (use o caminho do seu fork como marketplace):
+   ```
+   /plugin marketplace add /caminho/para/seu/claude-war-room
+   /plugin install claude-war-room
    ```
 
 2. Abra o Claude Code em um projeto real:
@@ -111,10 +112,11 @@ Seções que todo agente deve ter:
 
 Se o agente deve fazer parte do fluxo War Room:
 
-1. **Prefixe o arquivo** com o número da posição: `03-meu-agente.md`
-2. **Atualize** `memory/feedback_war_room_mode.md` adicionando o agente na posição correta
-3. **Atualize** `install.sh` adicionando o mapeamento no array `AGENT_FILES`
-4. **Atualize** docs: `ARCHITECTURE.md`, `EXAMPLES.md` e o README
+1. **Crie** `agents/meu-agente.md` com `name` em kebab-case.
+2. **Registre** o caminho em `.claude-plugin/plugin.json` no array `agents[]`.
+3. **Adicione** o `name` ao enum `agent` em `schemas/findings.schema.json`.
+4. **Conecte** ao fan-out em `commands/warroom-audit.md` (mais uma chamada `Agent` paralela).
+5. **Atualize** docs: `docs/ARCHITECTURE.md` e o README.
 
 ---
 
@@ -158,8 +160,8 @@ chore: atualiza markdownlint config
 ## O que NÃO fazer
 
 - Não remova agentes do pipeline sem discussão (abra uma issue antes)
-- Não mude o comando de ativação (`ativar modo war room:`) sem consenso
-- Não adicione dependências externas (o projeto é zero-dependency)
+- Não renomeie os slash commands (`/warroom`, `/warroom-audit`) sem consenso
+- Não adicione dependências externas ao runtime (o plugin é zero-dependency)
 - Não inclua dados reais de projetos nos exemplos
 - Não faça push direto para `main` (use PR)
 
@@ -167,10 +169,8 @@ chore: atualiza markdownlint config
 
 ## Ideias de Contribuição
 
-- Traduzir agentes para inglês
-- Criar agentes para novos domínios (FinTech, HealthTech, SaaS)
+- Criar **domain packs** novos (`packs/fintech`, `packs/healthtech`, …)
+- Criar agentes novos (Performance Profiler, Accessibility Auditor)
+- Adicionar exemplos reais (anonimizados) em `examples/`
 - Melhorar templates de output dos agentes
-- Adicionar mais cenários ao `docs/EXAMPLES.md`
-- Criar agente de Security Audit (OWASP Top 10)
-- Criar agente de Performance Profiling
-- Melhorar o `install.sh` com suporte a mais shells
+- Trabalhar nos itens do roadmap (v2.1: verificador adversarial, rubrica de severidade, eval harness)

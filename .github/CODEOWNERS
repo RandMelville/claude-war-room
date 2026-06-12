@@ -4,8 +4,5 @@
 # Agentes — require review do owner
 /agents/ @RandMelville
 
-# Pipeline de orquestração — require review do owner
-/memory/ @RandMelville
-
 # CI/CD
 /.github/ @RandMelville

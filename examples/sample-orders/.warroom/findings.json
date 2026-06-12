@@ -1,0 +1,64 @@
+{
+  "warroom_version": "2.0.0",
+  "generated_at": "2026-06-10T18:00:00Z",
+  "scope": "src/orders",
+  "confidence_index": "low",
+  "findings": [
+    {
+      "id": "CONC-001",
+      "agent": "concurrency-specialist",
+      "title": "Lost update no decremento de estoque sem lock",
+      "business_impact": "Dois pedidos simultâneos do mesmo item podem vender estoque que não existe (oversell).",
+      "technical_risk": "Read-modify-write em estoque sem optimistic (@Version) nem SELECT FOR UPDATE.",
+      "severity": 9,
+      "category": "race-condition",
+      "file": "src/orders/InventoryRepository.java",
+      "line": 58,
+      "evidence": "SELECT qty ... ; qty = qty - n ; UPDATE qty — sem transação serializável nem lock",
+      "status": "open",
+      "verified": false
+    },
+    {
+      "id": "INFRA-001",
+      "agent": "scalability-architect",
+      "title": "Pool de conexões subdimensionado (max=10)",
+      "business_impact": "No pico, pedidos ficam em fila e a checkout trava acima de ~50 req/s.",
+      "technical_risk": "HikariCP maximumPoolSize=10 com queries longas segurando conexões.",
+      "severity": 7,
+      "category": "bottleneck",
+      "file": "src/main/resources/application.yml",
+      "line": 12,
+      "evidence": "spring.datasource.hikari.maximum-pool-size: 10",
+      "status": "open",
+      "verified": false
+    },
+    {
+      "id": "SEC-001",
+      "agent": "security-auditor",
+      "title": "IDOR no GET /orders/{id} sem checagem de ownership",
+      "business_impact": "Um cliente consegue ler pedidos de outro cliente trocando o id na URL.",
+      "technical_risk": "A01:2021 — Broken Access Control: autentica mas não autoriza por dono.",
+      "severity": 8,
+      "category": "OWASP A01",
+      "file": "src/orders/OrderService.java",
+      "line": 121,
+      "evidence": "findById(id) retornado sem comparar order.customerId == principal.id",
+      "status": "open",
+      "verified": false
+    },
+    {
+      "id": "CHAOS-001",
+      "agent": "chaos-engineer-sre",
+      "title": "Chamada ao gateway de pagamento sem timeout",
+      "business_impact": "Se o gateway travar, threads de checkout ficam presas e o serviço para inteiro.",
+      "technical_risk": "Cliente HTTP sem connect/read timeout nem circuit breaker.",
+      "severity": 8,
+      "category": "resilience",
+      "file": "src/orders/OrderService.java",
+      "line": 84,
+      "evidence": "paymentClient.charge(...) sem timeout configurado",
+      "status": "open",
+      "verified": false
+    }
+  ]
+}
