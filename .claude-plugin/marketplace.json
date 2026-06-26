@@ -1,5 +1,6 @@
 {
   "name": "claude-war-room",
+  "description": "War Room — reverse-engineer any legacy codebase into living docs, then run a multi-agent risk audit with adversarial verification.",
   "owner": {
     "name": "Randerson Melville",
     "url": "https://github.com/RandMelville"
