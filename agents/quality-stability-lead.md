@@ -131,7 +131,7 @@ Rules:
 
 ```json
 {
-  "warroom_version": "2.0.0",
+  "warroom_version": "2.1.0",
   "generated_at": "{ISO-8601}",
   "scope": "{feature/module}",
   "confidence_index": "low | moderate | high",

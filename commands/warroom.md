@@ -38,7 +38,7 @@ shasum -a 256 <file>   # use the first field (64 hex) as sha256
 ```
 
 Fill in:
-- `warroom_version`: `"2.0.0"`
+- `warroom_version`: `"2.1.0"`
 - `generated_at`: `$TS`
 - `mode`: `"recon"`
 - `model`: the model used by the Recon (`"sonnet"`)
