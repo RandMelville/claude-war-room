@@ -8,7 +8,7 @@
     {
       "name": "claude-war-room",
       "source": "./",
-      "description": "Contexto instantâneo e confiável de qualquer codebase legado — engenharia reversa em doc viva, e um War Room multi-agente para caçar os riscos.",
+      "description": "Instant, reliable context for any legacy codebase — reverse-engineering into living docs, plus a multi-agent War Room to hunt down the risks.",
       "author": {
         "name": "Randerson Melville"
       },

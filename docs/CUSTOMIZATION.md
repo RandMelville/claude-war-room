@@ -1,83 +1,83 @@
-# Personalização do War Room
+# Customizing the War Room
 
-O core dos agentes é **neutro ao domínio**. A orquestração (`commands/`) funciona para qualquer
-sistema. Este guia mostra como adaptar ao seu contexto.
+The agent core is **domain-agnostic**. The orchestration (`commands/`) works for any
+system. This guide shows how to adapt it to your context.
 
 ---
 
-## 1. Domain Packs (em vez de find-and-replace)
+## 1. Domain Packs (instead of find-and-replace)
 
-No v1 você editava os agentes manualmente para reintroduzir termos de domínio. No v2, isso virou um
-**domain pack**: um overlay opcional de termos, métricas de escala e regulação.
+In v1 you manually edited the agents to reintroduce domain terms. In v2, this became a
+**domain pack**: an optional overlay of terms, scale metrics, and regulations.
 
-- Veja [`packs/edtech`](../packs/edtech/README.md) como exemplo e template.
-- Para ativar, cole o bloco do pack no `CLAUDE.md` do repositório-alvo (ou passe como contexto ao
-  rodar `/warroom` / `/warroom-audit`). Os agentes têm a diretriz de incorporar o pack ativo.
+- See [`packs/edtech`](../packs/edtech/README.md) as an example and template.
+- To activate it, paste the pack's block into the target repository's `CLAUDE.md` (or pass it as context when
+  running `/warroom` / `/warroom-audit`). The agents are instructed to incorporate the active pack.
 
-Para criar um pack novo (ex: FinTech), copie `packs/edtech/` para `packs/fintech/` e troque:
+To create a new pack (e.g. FinTech), copy `packs/edtech/` to `packs/fintech/` and swap:
 
-| Genérico (core)       | FinTech                         |
+| Generic (core)        | FinTech                         |
 |-----------------------|---------------------------------|
-| usuário / cliente     | operador / correntista          |
-| pedido / transação    | transação financeira / boleto   |
-| registro crítico      | lançamento, saldo               |
-| pico de carga         | fechamento mensal               |
-| PII / dados sensíveis  | dados financeiros (PCI-DSS)     |
+| user / customer       | operator / account holder       |
+| order / transaction   | financial transaction / invoice |
+| critical record       | ledger entry, balance           |
+| load peak             | monthly closing                 |
+| PII / sensitive data  | financial data (PCI-DSS)        |
 
 ---
 
-## 2. Tiers de modelo
+## 2. Model Tiers
 
-Cada agente define `model` no frontmatter. Os defaults do v2:
+Each agent sets `model` in its frontmatter. The v2 defaults:
 
-| Agente                    | Modelo  | Por quê                          |
+| Agent                     | Model   | Why                              |
 |---------------------------|---------|----------------------------------|
-| `recon`                   | sonnet  | Alta frequência, barato          |
-| 4 especialistas + lead    | opus    | Profundidade onde importa        |
+| `recon`                   | sonnet  | High frequency, cheap            |
+| 4 specialists + lead      | opus    | Depth where it matters           |
 
-Ajuste livremente. Para reduzir custo de uma auditoria, troque `opus` → `sonnet` nos especialistas
-(menor profundidade). Para máxima profundidade no Recon, troque `sonnet` → `opus`.
+Adjust freely. To reduce the cost of an audit, swap `opus` → `sonnet` on the specialists
+(less depth). For maximum depth on Recon, swap `sonnet` → `opus`.
 
 ---
 
-## 3. Focar o escopo
+## 3. Narrowing the scope
 
-Ambos os comandos aceitam um argumento de escopo — a forma mais barata de controlar custo e contexto:
+Both commands accept a scope argument — the cheapest way to control cost and context:
 
 ```
 /warroom src/billing
-/warroom-audit Autenticação
+/warroom-audit Authentication
 ```
 
 ---
 
-## 4. Adicionar um agente ao pipeline
+## 4. Adding an agent to the pipeline
 
-1. Crie `agents/meu-agente.md` (frontmatter com `name` em kebab-case).
-2. Registre o caminho em `.claude-plugin/plugin.json` → `agents[]`.
-3. Adicione o `name` ao enum `agent` em `schemas/findings.schema.json`.
-4. Conecte ao fan-out paralelo em `commands/warroom-audit.md` (mais uma chamada `Agent`).
-5. Atualize `docs/ARCHITECTURE.md` e o README.
+1. Create `agents/my-agent.md` (frontmatter with a kebab-case `name`).
+2. Register the path in `.claude-plugin/plugin.json` → `agents[]`.
+3. Add the `name` to the `agent` enum in `schemas/findings.schema.json`.
+4. Wire it into the parallel fan-out in `commands/warroom-audit.md` (one more `Agent` call).
+5. Update `docs/ARCHITECTURE.md` and the README.
 
-> O `quality-stability-lead` deve permanecer como **reduce** (último), pois consolida tudo e emite o
+> The `quality-stability-lead` must remain the **reduce** step (last), since it consolidates everything and emits
 > `findings.json`.
 
 ---
 
-## 5. Remover/encurtar o pipeline
+## 5. Removing/shortening the pipeline
 
-Para auditorias mais rápidas, edite `commands/warroom-audit.md` e dispare menos especialistas no
-fan-out. Exemplos de pipeline mínimo:
+For faster audits, edit `commands/warroom-audit.md` and dispatch fewer specialists in the
+fan-out. Examples of a minimal pipeline:
 
-- **Foco em concorrência:** Recon → `concurrency-specialist` → `quality-stability-lead`
-- **Foco em resiliência:** Recon → `chaos-engineer-sre` → `quality-stability-lead`
+- **Concurrency focus:** Recon → `concurrency-specialist` → `quality-stability-lead`
+- **Resilience focus:** Recon → `chaos-engineer-sre` → `quality-stability-lead`
 
-O `/warroom` sozinho (só Recon) já é um pipeline mínimo de 1 agente para entender um codebase.
+`/warroom` on its own (Recon only) is already a minimal 1-agent pipeline for understanding a codebase.
 
 ---
 
-## 6. Adaptar a estrutura de resposta
+## 6. Adapting the response structure
 
-Cada agente tem uma seção "Estrutura Obrigatória de Resposta" com templates de tabelas. Você pode
-adicionar seções (ex: "Compliance Check"), remover as irrelevantes ou alterar colunas. **Mantenha os
-diagramas Mermaid** e a emissão do `findings.json` pelo lead — são as partes mais valiosas.
+Each agent has a "Mandatory Response Structure" section with table templates. You can
+add sections (e.g. "Compliance Check"), remove irrelevant ones, or change columns. **Keep the
+Mermaid diagrams** and the lead's emission of `findings.json` — they are the most valuable parts.

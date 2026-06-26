@@ -151,7 +151,7 @@ jobs:
         with:
           globs: |
             README.md
-            README.en.md
+            README.pt-br.md
             CONTRIBUTING.md
             docs/*.md
             commands/*.md

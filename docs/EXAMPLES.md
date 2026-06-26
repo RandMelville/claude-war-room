@@ -1,51 +1,51 @@
-# Exemplos de Saída do War Room
+# War Room Output Examples
 
-Para ver os **artefatos completos** de uma execução, abra o exemplo commitado no repositório:
+To see the **full artifacts** of a run, open the example committed to the repository:
 
 ➡️ [`examples/sample-orders/.warroom/`](../examples/sample-orders/.warroom/)
 
 ```
 examples/sample-orders/.warroom/
-├── architecture.md     # saída do /warroom (Recon)
-├── manifest.json       # arquivos analisados + hashes + commit
-├── findings.json       # achados estruturados (severidade, evidência, status)
-└── audit/06-report.md  # Report de Confiança consolidado
+├── architecture.md     # output of /warroom (Recon)
+├── manifest.json       # analyzed files + hashes + commit
+├── findings.json       # structured findings (severity, evidence, status)
+└── audit/06-report.md  # consolidated Confidence Report
 ```
 
-> O exemplo é **ilustrativo** (sistema de pedidos sintético) — serve para mostrar o formato. Gere um
-> exemplo real apontando o plugin para qualquer repositório.
+> The example is **illustrative** (a synthetic orders system) — it's there to show the format. Generate a real
+> example by pointing the plugin at any repository.
 
 ---
 
-## Como gerar
+## How to generate
 
 ```
-/warroom                       # Recon: doc viva + manifest
-/warroom-audit                 # War Room completo: findings + audit/*
-/warroom-audit Autenticação    # focando numa feature
+/warroom                       # Recon: living documentation + manifest
+/warroom-audit                 # full War Room: findings + audit/*
+/warroom-audit Authentication  # focusing on a feature
 ```
 
 ---
 
-## O que cada agente produz (resumo)
+## What each agent produces (summary)
 
-| Agente | Entregável | Destaque |
+| Agent | Deliverable | Highlight |
 |--------|-----------|----------|
-| **Recon** | `architecture.md` | Stack, fluxo com diagrama Mermaid, regras de negócio, minas terrestres |
-| **Scalability Architect** | Inventário de gargalos | Ponto de ruptura + simulação de carga |
-| **Concurrency Specialist** | Mapa de escritas | Race conditions com sequência temporal (T1, T2) |
-| **Chaos Engineer / SRE** | Catálogo de desastres | Sequência de falha (T+0, T+30s, T+5min) + plano de resiliência |
-| **Security Auditor** | Catálogo de vulnerabilidades | OWASP + vetor de ataque passo a passo + correção |
-| **Quality & Stability Lead** | Report de Confiança + `findings.json` | Tradução para negócio + plano de ação priorizado |
+| **Recon** | `architecture.md` | Stack, flow with Mermaid diagram, business rules, landmines |
+| **Scalability Architect** | Bottleneck inventory | Breaking point + load simulation |
+| **Concurrency Specialist** | Write map | Race conditions with temporal sequence (T1, T2) |
+| **Chaos Engineer / SRE** | Disaster catalog | Failure sequence (T+0, T+30s, T+5min) + resilience plan |
+| **Security Auditor** | Vulnerability catalog | OWASP + step-by-step attack vector + fix |
+| **Quality & Stability Lead** | Confidence Report + `findings.json` | Business translation + prioritized action plan |
 
-Cada achado vira uma entrada estruturada em `findings.json` (id, agente, severidade 1-10, evidência
-`arquivo:linha`, status), pronta para ser consumida por dashboards e visões de portfólio (roadmap).
+Each finding becomes a structured entry in `findings.json` (id, agent, severity 1-10, evidence
+`file:line`, status), ready to be consumed by dashboards and portfolio views (roadmap).
 
 ---
 
-## Report HTML (opcional)
+## HTML Report (optional)
 
-Você ainda pode gerar um HTML navegável a partir dos Markdown gerados:
+You can still generate a navigable HTML report from the generated Markdown:
 
 ```bash
 ./generate-report.sh .warroom/audit/

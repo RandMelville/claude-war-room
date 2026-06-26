@@ -1,63 +1,65 @@
 ---
-description: "Recon — engenharia reversa do repositório/feature em doc viva. Mapeia stack, fluxos, regras de negócio e minas terrestres, e persiste em .warroom/ (architecture.md + manifest.json). Passe um caminho para focar (ex: /warroom src/billing) ou nada para o repositório inteiro."
-argument-hint: "[caminho|feature opcional]"
+description: "Recon — reverse-engineers the repository/feature into living documentation. Maps the stack, flows, business rules and landmines, and persists everything under .warroom/ (architecture.md + manifest.json). Pass a path to focus (e.g. /warroom src/billing) or nothing to scan the whole repo."
+argument-hint: "[optional path|feature]"
 ---
 
-# /warroom — Recon (doc viva de um codebase)
+# /warroom — Recon (living documentation for a codebase)
 
-Você vai reconstruir contexto confiável de um repositório legado e **persistir** o resultado para
-o time herdar. Siga este protocolo à risca.
+You are going to rebuild trustworthy context from a legacy repository and **persist** the result so
+the team can inherit it. Follow this protocol to the letter.
 
-## Passo 0 — Escopo e progresso
+## Step 0 — Scope and progress
 
-- O escopo é o argumento `$ARGUMENTS`. Se vazio, o escopo é o repositório inteiro (`.`).
-- Crie uma task list visível (TaskCreate) com 3 itens: `Recon`, `Persistir doc`, `Gerar manifest`.
+- The scope is the `$ARGUMENTS` argument. If empty, the scope is the whole repository (`.`).
+- Create a visible task list (TaskCreate) with 3 items: `Recon`, `Persist doc`, `Generate manifest`.
 
-## Passo 1 — Rodar o Recon
+## Step 1 — Run the Recon
 
-Invoque o subagente **`recon`** via a ferramenta `Agent`, instruindo-o a analisar o escopo
-(`$ARGUMENTS` ou o repo inteiro) e produzir o Documento de Arquitetura completo, **incluindo a
-seção obrigatória "7. Arquivos Analisados"**. Aguarde o resultado.
+Invoke the **`recon`** subagent via the `Agent` tool, instructing it to analyze the scope
+(`$ARGUMENTS` or the whole repo) and produce the complete Architecture Document, **including the
+mandatory section "7. Files Analyzed"**. Wait for the result.
 
-## Passo 2 — Persistir a doc viva
+## Step 2 — Persist the living documentation
 
-1. Crie o diretório `.warroom/` na raiz do repositório-alvo (não no repo do plugin).
-2. Grave a saída do Recon em `.warroom/architecture.md`.
+1. Create the `.warroom/` directory at the root of the target repository (not in the plugin repo).
+2. Write the Recon output to `.warroom/architecture.md`.
 
-## Passo 3 — Gerar o manifesto (base de drift)
+## Step 3 — Generate the manifest (drift baseline)
 
-Monte `.warroom/manifest.json` válido contra `schemas/manifest.schema.json`. Para isso, use Bash:
+Build a `.warroom/manifest.json` that is valid against `schemas/manifest.schema.json`. To do this, use Bash:
 
 ```bash
-# commit atual (ou null se não for repo git)
+# current commit (or null if not a git repo)
 COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
-# timestamp ISO-8601 UTC
+# ISO-8601 UTC timestamp
 TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-# hash de cada arquivo listado pelo Recon na seção "Arquivos Analisados":
-shasum -a 256 <arquivo>   # use o primeiro campo (64 hex) como sha256
+# hash of each file listed by the Recon in the "Files Analyzed" section:
+shasum -a 256 <file>   # use the first field (64 hex) as sha256
 ```
 
-Preencha:
+Fill in:
 - `warroom_version`: `"2.0.0"`
 - `generated_at`: `$TS`
 - `mode`: `"recon"`
-- `model`: o modelo usado pelo Recon (`"sonnet"`)
-- `scope`: `$ARGUMENTS` ou `"."`
-- `commit_sha`: `$COMMIT` (ou `null` se vazio)
-- `files`: um objeto `{path, sha256}` para **cada** arquivo da seção "Arquivos Analisados".
+- `model`: the model used by the Recon (`"sonnet"`)
+- `scope`: `$ARGUMENTS` or `"."`
+- `commit_sha`: `$COMMIT` (or `null` if empty)
+- `files`: a `{path, sha256}` object for **each** file in the "Files Analyzed" section.
 
-Grave em `.warroom/manifest.json`. Marque as tasks como concluídas conforme avança.
+Write it to `.warroom/manifest.json`. Mark the tasks as completed as you progress.
 
-## Passo 4 — Fechamento
+## Step 4 — Wrap-up
 
-Responda ao usuário com:
-- Caminho dos artefatos gerados (`.warroom/architecture.md`, `.warroom/manifest.json`).
-- 3-5 bullets com as **minas terrestres** mais relevantes encontradas pelo Recon.
-- Sugestão: rode `/warroom-audit` para a auditoria multi-agente completa de riscos.
+Reply to the user with:
+- The path to the generated artifacts (`.warroom/architecture.md`, `.warroom/manifest.json`).
+- 3-5 bullets covering the most relevant **landmines** found by the Recon.
+- Suggestion: run `/warroom-audit` for the full multi-agent risk audit.
 
-## Regras
+## Rules
 
-- **Não invente** — o Recon já é instruído a só afirmar o que tem evidência `arquivo:linha`.
-- **Commitável:** os artefatos em `.warroom/` foram desenhados para serem versionados pelo time.
-- Se já existir `.warroom/manifest.json`, avise que está **sobrescrevendo** a análise anterior
-  (na v2.2 isto vira um diff incremental via `/warroom-refresh`).
+- **Don't make things up** — the Recon is already instructed to only assert what it can back with
+  `file:line` evidence.
+- **Committable:** the artifacts under `.warroom/` are designed to be versioned by the team.
+- If `.warroom/manifest.json` already exists, warn that you are **overwriting** the previous
+  analysis (in v2.2 this becomes an incremental diff via `/warroom-refresh`).
+- **Reply to the user in their language** (match the language of their request); the generated artifacts follow the agents' language-adaptive rule.
