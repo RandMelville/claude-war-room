@@ -157,8 +157,10 @@ v1 installed agents manually into `~/.claude/agents/` and triggered everything w
 
 ## Roadmap
 
-- **v2.1 — Trust:** adversarial verification of findings (kills false positives), calibrated
-  severity rubric, eval harness in CI.
+- **v2.1 — Trust:** ✅ adversarial verification of findings — the `adversarial-verifier` re-opens
+  every cited `file:line` and tries to **refute** each finding, setting `verified` and killing false
+  positives before a human trusts the report. _Next in v2.1:_ calibrated severity rubric, eval
+  harness in CI.
 - **v2.2 — Scale:** `/warroom-refresh` (drift detection via `manifest.json`), multi-repo analysis
   and portfolio view.
 

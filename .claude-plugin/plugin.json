@@ -28,6 +28,7 @@
     "./agents/concurrency-specialist.md",
     "./agents/chaos-engineer-sre.md",
     "./agents/security-auditor.md",
-    "./agents/quality-stability-lead.md"
+    "./agents/quality-stability-lead.md",
+    "./agents/adversarial-verifier.md"
   ]
 }

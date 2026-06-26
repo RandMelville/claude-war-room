@@ -191,6 +191,25 @@ of the `Agent` tool (one per specialist). The 4 outputs, plus the map, are then 
 
 ---
 
+### Agent 7: Adversarial Verifier (v2.1)
+
+**File:** `agents/adversarial-verifier.md`
+
+**Purpose:** The skeptic. Runs **after** the Lead, in a verification pass, and tries to **refute** every
+finding — not confirm it. Re-opens each cited `file:line` in the real code and checks: does the code
+actually say this? is it intentional/by-design? mitigated one layer out? is the severity inflated?
+
+**Execution:** the orchestrator batches the findings and fires verifier calls **in parallel**; each
+verdict is merged back into `findings.json` (`verified`, `status`, recalibrated `severity`,
+`verification_note`). The `confidence_index` is then recomputed from **confirmed findings only**.
+
+**Calibration:** when the evidence is ambiguous, it **defaults to refuted** — a false positive that
+survives verification hurts trust more than a missed bug. See the real before/after in
+[`examples/solidus-checkout/.warroom/audit/07-verification.md`](../examples/solidus-checkout/.warroom/audit/07-verification.md)
+(36 raw findings → 27 confirmed, 9 false positives, confidence Low → Moderate).
+
+---
+
 ## Tools Used
 
 All agents use the same toolset:
@@ -210,5 +229,5 @@ All agents use the same toolset:
 1. **Context** — The parallel fan-out greatly relieves v1's context blowup, but giant codebases still benefit from narrowing down with the scope argument (e.g. `/warroom-audit src/billing`).
 2. **Model** — **Recon** uses `model: sonnet` (cheap, high frequency); the 4 specialists and the Lead use `model: opus` (depth where it matters). Adjustable in each agent's frontmatter.
 3. **Static reading** — The agents analyze static code. They don't run tests, don't access the production database, and don't do real profiling.
-4. **Unverified findings** — In v2.0 findings come out with `verified: false`. The adversarial verification that kills false positives lands in v2.1.
+4. **Finding verification** — As of v2.1, the `adversarial-verifier` re-checks every finding and sets `verified`, killing false positives and recalibrating severity (see Agent 7). Still pending in v2.1: a calibrated severity rubric and an eval harness in CI.
 5. **Domain** — The core is domain-agnostic. To reintroduce domain-specific vocabulary, use a domain pack (e.g. [`packs/edtech`](../packs/edtech/README.md)). See also [CUSTOMIZATION.md](CUSTOMIZATION.md).

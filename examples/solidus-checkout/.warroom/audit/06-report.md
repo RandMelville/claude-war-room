@@ -5,7 +5,19 @@
 **Data:** 2026-06-25
 **Sistema analisado:** `core/app/models/spree` — pedidos/checkout/pagamento (Solidus `4.8.0.dev`, commit `8d781ac`)
 **Agentes consolidados:** Scalability Architect, Concurrency Specialist, Chaos Engineer/SRE, Security Auditor (sobre o mapa do Recon)
-**Índice de Confiança:** 🔴 **Baixo (low)**
+**Índice de Confiança:** 🟡 **Moderado (moderate)** — recalibrado após verificação adversarial (era 🔴 Baixo no relatório bruto)
+
+---
+
+> ## ⚖️ Atualização da verificação adversarial (v2.1)
+>
+> Este relatório bruto foi submetido ao `adversarial-verifier`, que reabriu cada `arquivo:linha` no
+> código real e tentou refutar cada achado. **Resultado: dos 36 achados, 27 confirmados e 9 falsos
+> positivos; nenhum dos 5 "críticos" sobreviveu como crítico** (2 refutados, 3 rebaixados). Por isso o
+> Índice de Confiança subiu de **Baixo → Moderado**. O texto abaixo é o relatório original (pré-
+> verificação); para os números corretos e o porquê de cada refutação, veja
+> [`07-verification.md`](07-verification.md) e os campos `verified`/`severity`/`verification_note` em
+> `findings.json`.
 
 ---
 
