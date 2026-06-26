@@ -2,7 +2,7 @@
   "warroom_version": "2.0.0",
   "generated_at": "2026-06-25T00:00:00Z",
   "scope": "core/app/models/spree (pedidos/checkout)",
-  "confidence_index": "low",
+  "confidence_index": "moderate",
   "findings": [
     {
       "id": "CHAOS-001",
@@ -10,13 +10,14 @@
       "title": "Chamadas ao gateway de pagamento sem read/open-timeout (thread e conexão DB retidas durante I/O externa)",
       "business_impact": "Quando o provedor de pagamento degrada, o site inteiro cai (homepage, catálogo, login, admin) — não só o checkout. Perda total de vendas em pico.",
       "technical_risk": "Chamada HTTP síncrona ao gateway via ActiveMerchant sem read_timeout/open_timeout: thread Puma presa indefinidamente e conexão de banco retida em transação aberta, esgotando o pool em cascata. Convergência de 2 agentes — CHAOS-001 (thread starvation) e SCAL-001 (esgotamento do pool de conexões DB durante a janela do gateway).",
-      "severity": 9,
+      "severity": 5,
       "category": "resilience",
       "file": "core/app/models/spree/payment/processing.rb",
       "line": 42,
       "evidence": "payment/processing.rb:42-49 (sem timeout); payment_method.rb:90-100 (gateway construído sem read_timeout/open_timeout); order/payments.rb:44-46 (chamada síncrona dentro do request, conexão DB associada).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado mas inflado: chamada de gateway sincrona sem timeout app-level (processing.rb:42-49), porem ActiveMerchant ~>1.66 (solidus_core.gemspec:36) aplica defaults de 60s open/read (nao indefinidamente) e use_transactions:false significa que nao ha transacao aberta envolvendo a chamada; config de timeout e responsabilidade do integrador."
     },
     {
       "id": "CONC-001",
@@ -24,13 +25,14 @@
       "title": "State machine com use_transactions:false: finalize multi-tabela sem rollback deixa pedido inconsistente",
       "business_impact": "Pedidos ficam 'presos' entre estados — estoque decrementado e/ou pagamento capturado, mas pedido não completado. Exige conciliação manual e gera receita não rastreada.",
       "technical_risk": "use_transactions:false desativa a transação que a gem envolveria na transição; finalize escreve em 4+ tabelas (adjustments, shipments, inventory, order) com transações isoladas — uma falha parcial (save!, deadlock, validação de stock<0) não sofre rollback. Convergência de 3 agentes — Recon (Mina #1), CONC-001 e CHAOS-005.",
-      "severity": 9,
+      "severity": 7,
       "category": "atomicity",
       "file": "core/app/models/spree/core/state_machines/order/class_methods.rb",
       "line": 38,
       "evidence": "class_methods.rb:38 (use_transactions:false); order.rb:758-774 (finalize: all_adjustments.each(&:finalize!) -> shipments.finalize! (unstock) -> save! -> touch :completed_at, sem transação envolvente).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: use_transactions:false (class_methods.rb:38) + finalize escreve adjustments/shipments(unstock)/save!/touch/publish sem transacao envolvente (order.rb:758-774); trade-off intencional, mas finalize pos-pagamento fica nao-atomico."
     },
     {
       "id": "CONC-002",
@@ -38,13 +40,14 @@
       "title": "Oversell por TOCTOU de estoque (check fill_status diferente do decremento)",
       "business_impact": "Venda de estoque inexistente: rupturas, cancelamentos pós-compra e perda de confiança do cliente. Variantes backorderable vendem silenciosamente abaixo de zero.",
       "technical_risk": "fill_status lê count_on_hand SEM lock e o decremento posterior usa with_lock apenas no incremento aritmético — o intervalo decisão→escrita fica desprotegido (read-then-act). Dois checkouts concorrentes leem o mesmo saldo e ambos decrementam.",
-      "severity": 9,
+      "severity": 3,
       "category": "race-condition",
       "file": "core/app/models/spree/order_inventory.rb",
       "line": 76,
       "evidence": "order_inventory.rb:76 (fill_status sem lock) e :86 (decremento); stock_item.rb:37-44 (with_lock cobre só count_on_hand += value); inventory_units_finalizer.rb:18,35-41.",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refutado: a corrida em fill_status (order_inventory.rb:76) existe, mas a validacao count_on_hand>=0 unless backorderable (stock_item.rb:13) sob with_lock (stock_item.rb:38) bloqueia estoque negativo levantando excecao — nao ha oversell silencioso; residuo = falha de checkout = CONC-001."
     },
     {
       "id": "CHAOS-002",
@@ -52,13 +55,14 @@
       "title": "Lock do pedido expira (120s) durante request pendurada no gateway, permitindo cobrança em dobro",
       "business_impact": "Cliente cobrado duas vezes pelo mesmo pedido — chargebacks, multas PCI e dano reputacional.",
       "technical_risk": "expired.where(order:).delete_all remove o lock de um processo ainda ativo que ultrapassou order_mutex_max_age (120s); uma segunda request (retry do cliente/load balancer) adquire o lock e reprocessa o mesmo pedido, sem idempotency key no gateway. Convergência de 2 agentes — CHAOS-002 e CONC-003 (janela de expiração permite 2 seções críticas concorrentes).",
-      "severity": 9,
+      "severity": 8,
       "category": "race-condition",
       "file": "core/app/models/spree/order_mutex.rb",
       "line": 9,
       "evidence": "order_mutex.rb:9,19-22,31 (expiração + delete_all dos expirados); app_configuration.rb:214 (order_mutex_max_age=120s); payment/processing.rb:42-49 (sem timeout que limite a request abaixo de 120s).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: checkout/pagamento sob OrderMutex (lock_order em checkouts_controller.rb:7/payments_controller.rb:7 -> base_controller.rb:194); expired.delete_all remove lock ativo apos 120s (order_mutex.rb:19; app_configuration.rb:214) e o reprocesso nao envia idempotency key (gateway_options 116-146); exige hang >120s."
     },
     {
       "id": "CHAOS-003",
@@ -66,13 +70,14 @@
       "title": "Pagamento órfão preso em :processing (gateway cobra, app não confirma)",
       "business_impact": "Cliente cobrado sem pedido correspondente; o dinheiro fica preso e nenhum retry corrige — exige refund manual e abre disputa/suporte.",
       "technical_risk": "started_processing! persiste state=:processing ANTES da chamada; se o processo morre ou o DB cai após a captura mas antes de pend!/complete!, check_payment_preconditions! faz return if processing? e bloqueia qualquer reprocessamento. Não existe job de reconciliação no código.",
-      "severity": 9,
+      "severity": 6,
       "category": "resilience",
       "file": "core/app/models/spree/payment/processing.rb",
       "line": 40,
       "evidence": "payment/processing.rb:40,56 (started_processing! grava :processing antes); :168 (check_payment_preconditions! retorna em processing?); :25-35 (process! não age sobre payment já em processing).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: started_processing! grava :processing antes da chamada (processing.rb:40,56,78) e check_payment_preconditions! return if processing? (:168) bloqueia reprocessamento; nao existe job de reconciliacao; requer crash em janela estreita."
     },
     {
       "id": "CHAOS-004",
@@ -80,13 +85,14 @@
       "title": "protect_from_connection_error captura apenas ActiveMerchant::ConnectionError",
       "business_impact": "Erros 500 no checkout e abandono de carrinho quando o gateway sofre timeout de socket, reset de conexão ou erro de SSL.",
       "technical_risk": "O rescue cobre só ConnectionError; Timeout::Error, Net::ReadTimeout, Net::OpenTimeout, Errno::ECONNRESET, SocketError e OpenSSL::SSL::SSLError sobem sem tratamento, abortando a transição de estado.",
-      "severity": 8,
+      "severity": 3,
       "category": "resilience",
       "file": "core/app/models/spree/payment/processing.rb",
       "line": 212,
       "evidence": "payment/processing.rb:212-216 (rescue ActiveMerchant::ConnectionError apenas).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refutado: ActiveMerchant::Connection encapsula Timeout::Error/Net::ReadTimeout/Net::OpenTimeout/Errno::ECONNRESET/ECONNREFUSED/EOFError em ActiveMerchant::ConnectionError antes de chegar ao Solidus, e protect_from_connection_error (processing.rb:212-216) captura essa fronteira; os erros listados nao sobem crus."
     },
     {
       "id": "CHAOS-007",
@@ -94,13 +100,14 @@
       "title": "Ausência total de retry com backoff e circuit breaker no caminho de pagamento",
       "business_impact": "Picos de carga e incidentes do gateway são amplificados sem degradação graciosa; retry ingênuo do cliente martela um provedor já caído.",
       "technical_risk": "O único retry_on do projeto é ActiveRecord::Deadlocked em base_job.rb:7; não há circuit breaker nem backoff em nenhuma chamada de gateway.",
-      "severity": 8,
+      "severity": 3,
       "category": "resilience",
       "file": "core/app/jobs/spree/base_job.rb",
       "line": 7,
       "evidence": "base_job.rb:7 (retry_on Deadlocked, único do projeto); payment/processing.rb:42-49 (nenhum circuit breaker/backoff).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Recalibrado: fato correto (base_job.rb:7 so retry_on Deadlocked) mas e ausencia-de-feature; chamadas de gateway sao sincronas (nao ActiveJob) e circuit breaker/backoff de gateway e responsabilidade do integrador, nao do engine."
     },
     {
       "id": "SCAL-002",
@@ -108,13 +115,14 @@
       "title": "N+1 em recalculate_payment_total (refunds) dentro da transação de recálculo",
       "business_impact": "Latência elevada no fechamento do pedido, agravando o gargalo do gateway no passo complete.",
       "technical_risk": "includes(:refunds) carrega refunds em memória, mas payment.refunds.sum(:amount) no bloco é um sum SQL que ignora o eager-load e dispara uma query por payment. Duplicado nos dois recalculadores. Correção: payment.refunds.sum(&:amount).",
-      "severity": 7,
+      "severity": 4,
       "category": "bottleneck",
       "file": "core/app/models/spree/order_updater.rb",
       "line": 151,
       "evidence": "order_updater.rb:151 e in_memory_order_updater.rb:211 (payments.completed.includes(:refunds).sum { |p| p.amount - p.refunds.sum(:amount) }).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed real N+1: includes(:refunds) is wasted because payment.refunds.sum(:amount) runs one SQL SUM per payment (order_updater.rb:151; in_memory_order_updater.rb:211); blast radius is completed payments per order (~1-3), so downgraded from 7."
     },
     {
       "id": "SCAL-003",
@@ -122,13 +130,14 @@
       "title": "Recálculo completo O(n) disparado por after_save de cada payment",
       "business_impact": "Checkout lento com múltiplos pagamentos/créditos de loja; degradação geral em pico (Black Friday).",
       "technical_risk": "Cada save de payment dispara order.recalculate completo (reabre transação, refaz update_totals/adjustments e persist_totals -> order.save!). Com store credits múltiplos é O(n) recálculos, cada um com o N+1 do SCAL-002 aninhado. Convergência com CHAOS-011 (amplificação de carga sob estresse).",
-      "severity": 7,
+      "severity": 2,
       "category": "bottleneck",
       "file": "core/app/models/spree/order_updater.rb",
       "line": 19,
       "evidence": "order_updater.rb:19-33 (recalculate em transação); payment.rb:31,201-204 (after_save :update_order -> order.recalculate); order.rb:585-625 (add_store_credit_payments cria payments em loop).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refuted: update_order recalculates only if order.completed? || completed? || void? (payment.rb:201-205); store-credit payments are checkout-state on a non-completed order (order.rb:609), so the claimed O(n) recalc amplification during the loop never fires."
     },
     {
       "id": "SCAL-004",
@@ -136,13 +145,14 @@
       "title": "Shipments recriados e frete recomputado sem cache a cada transição para delivery",
       "business_impact": "Lentidão no passo de entrega e maior abandono de carrinho; custo de DB cresce com clientes oscilando entre address e delivery.",
       "technical_risk": "create_proposed_shipments faz destroy_all + recria todos os shipments, recarrega Spree::StockLocation.all e recomputa o calculator de cada shipping method por pacote, sem nenhum cache. Custo ~ O(locations x métodos x pacotes) por transição.",
-      "severity": 7,
+      "severity": 4,
       "category": "bottleneck",
       "file": "core/app/models/spree/order.rb",
       "line": 510,
       "evidence": "order.rb:510-511; stock/simple_coordinator.rb:72,77-79; stock/estimator.rb:38-39; grep Rails.cache nesses modelos retorna vazio.",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed code: destroy_all+rebuild (order.rb:510-511), StockLocation.all reloaded (simple_coordinator.rb:72), per method/package compute (estimator.rb:38-39), no cache; but recomputing rates on address change is by-design and cost scales with config not traffic, so downgraded from 7."
     },
     {
       "id": "CONC-005",
@@ -150,13 +160,14 @@
       "title": "Store credit pode ser gasto em duplicidade entre carrinhos do mesmo usuário",
       "business_impact": "Prejuízo financeiro direto: o saldo de crédito de loja é debitado duas vezes quando o usuário tem dois pedidos concorrentes.",
       "technical_risk": "add_store_credit_payments lê amount_remaining e cria o payment sem lock sobre o store credit. Mutexes são por order_id, então dois pedidos distintos do mesmo usuário não se serializam — ambos leem o mesmo saldo e consomem o crédito.",
-      "severity": 7,
+      "severity": 6,
       "category": "race-condition",
       "file": "core/app/models/spree/order.rb",
       "line": 594,
       "evidence": "order.rb:594-610 (lê authorized_total/amount_remaining e payments.create! sem store_credit.with_lock).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: authorize/capture do store credit (store_credit.rb:59-118) sem with_lock e mutex por order_id nao serializa dois pedidos do mesmo usuario; validacoes de modelo sao last-write-wins e nao barram o double-spend concorrente."
     },
     {
       "id": "CONC-006",
@@ -164,13 +175,14 @@
       "title": "Cobrança dupla e perda de mudanças em memória no processamento de pagamento",
       "business_impact": "Cliente cobrado em duplicidade e estado de pagamento divergente do real.",
       "technical_risk": "process_payments! não envia idempotency key ao gateway; e order.reload em gateway_options descarta atributos não persistidos em memória antes da cobrança. Sem lock/idempotência, uma reentrada gera segunda cobrança.",
-      "severity": 7,
+      "severity": 4,
       "category": "race-condition",
       "file": "core/app/models/spree/order/payments.rb",
       "line": 40,
       "evidence": "order/payments.rb:40-48 (process_payments! sem idempotency key); payment/processing.rb:116 (order.reload em gateway_options).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Rebaixado: ausencia de idempotency key real (order/payments.rb:40-48), mas OrderMutex serializa requests do mesmo pedido (base_controller.rb:195), logo o double-charge isolado depende da expiracao do mutex (CHAOS-002); order.reload tem impacto baixo."
     },
     {
       "id": "CHAOS-006",
@@ -178,13 +190,14 @@
       "title": "allow_checkout_on_gateway_error permite pedido completar SEM pagamento",
       "business_impact": "Durante uma queda do gateway, pedidos não pagos avançam para :complete e podem ser expedidos — fulfillment de pedidos sem receita.",
       "technical_risk": "No rescue de GatewayError, result = !!Spree::Config[:allow_checkout_on_gateway_error] e o método retorna true mesmo com pagamento falho, deixando o checkout avançar. Sem monitor de payment_state != paid em pedidos completos.",
-      "severity": 7,
+      "severity": 3,
       "category": "resilience",
       "file": "core/app/models/spree/order/payments.rb",
       "line": 49,
       "evidence": "order/payments.rb:49-52 (rescue Core::GatewayError -> result = !!Spree::Config[:allow_checkout_on_gateway_error]; return result).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Recalibrado: comportamento real (order/payments.rb:49-52) porem gated por allow_checkout_on_gateway_error com default:false (app_configuration.rb:61) — opt-in documentado, trade-off intencional desligado por padrao."
     },
     {
       "id": "SCAL-005",
@@ -192,13 +205,14 @@
       "title": "N+1 em determine_target_shipment (shipments + Quantifier)",
       "business_impact": "Lentidão ao ajustar itens em pedidos, proporcional ao número de shipments.",
       "technical_risk": "order.shipments.order(:created_at,:id) seguido de detect/include? e Quantifier.new por shipment gera 1+ query por shipment sem pré-carregamento.",
-      "severity": 6,
+      "severity": 3,
       "category": "bottleneck",
       "file": "core/app/models/spree/order_inventory.rb",
       "line": 60,
       "evidence": "order_inventory.rb:60-70 (shipments + Quantifier.new(variant, shipment.stock_location).can_supply? por shipment).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed per-shipment queries via shipment.include?(variant) and Quantifier.new(variant, shipment.stock_location) without preload (order_inventory.rb:60-70); shipments per order ~1, so micro-impact, downgraded from 6."
     },
     {
       "id": "SCAL-006",
@@ -206,13 +220,14 @@
       "title": "N+1 em Quantifier#variant_stock_items (stock_location por stock_item)",
       "business_impact": "Latência em verificações de estoque sob multi-location.",
       "technical_risk": "variant.stock_items.select { |si| si.stock_location.active? } e total_on_hand somam em memória sem includes(:stock_location) — uma query de stock_location por stock_item.",
-      "severity": 6,
+      "severity": 3,
       "category": "bottleneck",
       "file": "core/app/models/spree/stock/quantifier.rb",
       "line": null,
       "evidence": "stock/quantifier.rb (variant_stock_items / total_on_hand) sem includes(:stock_location).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed N+1: variant.stock_items lacks includes(:stock_location) and both branches touch stock_item.stock_location per item (quantifier.rb:65-74); stock_items per variant ~= number of locations (~1), so downgraded from 6."
     },
     {
       "id": "SCAL-007",
@@ -220,13 +235,14 @@
       "title": "Write-amplification e HTTP 409 sob contenção no OrderMutex",
       "business_impact": "Erros 409 visíveis ao usuário em double-click/retry e carga de escrita extra proporcional às transições, não às vendas.",
       "technical_risk": "Cada passo de checkout faz DELETE+INSERT+DELETE em spree_order_mutexes; with_lock! levanta LockFailed (409) imediatamente, sem retry gracioso.",
-      "severity": 6,
+      "severity": 3,
       "category": "bottleneck",
       "file": "core/app/models/spree/order_mutex.rb",
       "line": 19,
       "evidence": "order_mutex.rb:19 (expired.delete_all), :22 (create!), :31 (destroy); sem retry/backoff no client.",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed DELETE(expired,order-scoped)+INSERT+DELETE per call and immediate LockFailed without retry (order_mutex.rb:19,22,23-27,31), but raise-not-block is explicitly by-design (lines 13-14) on a one-row-per-checkout table, so downgraded from 6."
     },
     {
       "id": "SCAL-008",
@@ -234,13 +250,14 @@
       "title": "order.reload forçado antes de cada transação de gateway",
       "business_impact": "Fechamento mais lento com múltiplos pagamentos e lentidão adicional sob DB saturado; perde mudanças em memória.",
       "technical_risk": "gateway_options chama order.reload a cada process!: N SELECTs completos no caminho crítico do gateway, prolongando a retenção de conexão. Convergência com CHAOS-010 (reload pendura sob DB a 100%).",
-      "severity": 5,
+      "severity": 3,
       "category": "bottleneck",
       "file": "core/app/models/spree/payment/processing.rb",
       "line": 116,
       "evidence": "payment/processing.rb:116 (order.reload no topo de gateway_options).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed order.reload runs a full SELECT at the top of gateway_options before each gateway call (payment/processing.rb:116); ~1 per payment, minor critical-path cost, so downgraded from 5."
     },
     {
       "id": "SCAL-009",
@@ -248,13 +265,14 @@
       "title": "Ausência total de camada de cache em estoque/frete",
       "business_impact": "Custo de infraestrutura cresce linearmente com o tráfego de leitura; sem mitigação para cache stampede em dados quentes.",
       "technical_risk": "grep por Rails.cache/Spree::Config.cache nos modelos de order/stock retorna vazio — tudo é recomputado a cada requisição.",
-      "severity": 5,
+      "severity": 2,
       "category": "bottleneck",
       "file": null,
       "line": null,
       "evidence": "grep Rails.cache em core/app/models/spree/order_* e stock_* = vazio.",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refuted: no concrete file:line; absence of Rails.cache in stock/order models is intentional for correctness (caching live stock/freight risks staleness/oversell) and caching is the host app's responsibility, not an engine defect."
     },
     {
       "id": "SCAL-010",
@@ -262,13 +280,14 @@
       "title": "Backend index com ransack sobre atributos arbitrários",
       "business_impact": "Painel admin lento/instável em base grande de pedidos, competindo pelo mesmo pool do checkout.",
       "technical_risk": "ransack(params[:q]) permite filtrar/ordenar por colunas possivelmente sem índice -> full scan; includes([:user]) evita N+1 do usuário, mas não protege o WHERE/ORDER BY.",
-      "severity": 5,
+      "severity": 3,
       "category": "bottleneck",
       "file": "backend/app/controllers/spree/admin/orders_controller.rb",
       "line": 53,
       "evidence": "backend/admin/orders_controller.rb:53-56 (ransack + includes([:user]).page.per).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed ransack(params[:q]).result.includes([:user]).page.per (orders_controller.rb:53-56) can scan unindexed columns, but it is admin-only, auth-gated via accessible_by(:index) and paginated, so downgraded from 5."
     },
     {
       "id": "SCAL-011",
@@ -276,13 +295,14 @@
       "title": "finalize faz N writes de adjustments/shipments em uma transição sem rollback",
       "business_impact": "Risco de estado inconsistente e contenção de linha em pedidos grandes.",
       "technical_risk": "finalize executa múltiplos UPDATEs (adjustments, shipments, order) numa transição sem transação envolvente — contenção em spree_orders. Relacionado a CONC-001/CHAOS-005.",
-      "severity": 4,
+      "severity": 3,
       "category": "bottleneck",
       "file": "core/app/models/spree/order.rb",
       "line": 760,
       "evidence": "order.rb:760,764-770 (N writes de adjustments/shipments dentro da transição).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed finalize does N writes with no enclosing transaction (order.rb:758-775), but this is the atomicity issue already owned by CONC-001/CHAOS-005 (not a throughput bottleneck) and only 2 writes hit spree_orders, so downgraded from 4."
     },
     {
       "id": "CONC-004",
@@ -290,13 +310,14 @@
       "title": "OrderMutex.with_lock! não é reentrante",
       "business_impact": "Operações compostas (ex.: cancel -> reimburse) falham com LockFailed espúrio mesmo na mesma thread.",
       "technical_risk": "create! aninhado na mesma thread colide com o índice único do próprio lock; with_lock! não mantém contador por thread.",
-      "severity": 5,
+      "severity": 4,
       "category": "concurrency",
       "file": "core/app/models/spree/order_mutex.rb",
       "line": 15,
       "evidence": "order_mutex.rb:15-32 (with_lock! com create! não reentrante).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: indice unico em order_id (migrate:266) + create! (order_mutex.rb:22) tornam with_lock! nao-reentrante; chamada aninhada na mesma thread (action sob mutex chamando OrderCancellations) gera LockFailed espurio."
     },
     {
       "id": "CONC-007",
@@ -304,13 +325,14 @@
       "title": "Lost update nos totais do pedido em recálculos concorrentes",
       "business_impact": "Total/pagamento incorretos faturados ao cliente quando dois recálculos concorrem.",
       "technical_risk": "recalculate é read-modify-write em Ruby sob READ COMMITTED, sem lock_version nem SELECT FOR UPDATE; nenhum isolation: configurado nas transações.",
-      "severity": 6,
+      "severity": 4,
       "category": "race-condition",
       "file": "core/app/models/spree/order_updater.rb",
       "line": 150,
       "evidence": "order_updater.rb:19-33,150-199 e in_memory_order_updater.rb:34-57 (read-modify-write sem lock_version/FOR UPDATE).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Rebaixado: recalculate e read-modify-write sem lock_version (ausente em todas as migrations) nem FOR UPDATE (order_updater.rb:19-31,150), porem OrderMutex serializa escritas do mesmo pedido nas rotas API/admin, mitigando o lost update no caminho dominante."
     },
     {
       "id": "CONC-008",
@@ -318,13 +340,14 @@
       "title": "Número de pedido duplicado (TOCTOU + índice não-único)",
       "business_impact": "Dois pedidos com o mesmo número causam erros em fatura, suporte e integração fiscal.",
       "technical_risk": "NumberGenerator#generate usa exists? seguido de save sem unique constraint de banco como backstop — TOCTOU. Correção: índice único em spree_orders.number + retry no RecordNotUnique.",
-      "severity": 6,
+      "severity": 2,
       "category": "race-condition",
       "file": "core/app/models/spree/order/number_generator.rb",
       "line": 32,
       "evidence": "order/number_generator.rb:32-42; migration solidus_one_four.rb:309 (índice não-único em number).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Rebaixado: exists?-then-save (number_generator.rb:36) + indice nao-unico (migrate:309) confirmam o TOCTOU, mas colisao de dois numeros aleatorios de 9 digitos identicos concorrentes (~1/10^9) e negligenciavel."
     },
     {
       "id": "CONC-009",
@@ -332,13 +355,14 @@
       "title": "Deadlock potencial em locks de stock_items multi-variante",
       "business_impact": "Falhas intermitentes de checkout sob carga.",
       "technical_risk": "Dois pedidos contendo as variantes A e B em ordens diferentes adquirem row locks de stock_items em ordem cruzada (A->B vs B->A) durante adjust_count_on_hand, gerando deadlock no banco.",
-      "severity": 5,
+      "severity": 4,
       "category": "deadlock",
       "file": "core/app/models/spree/order_inventory.rb",
       "line": 76,
       "evidence": "order_inventory.rb:76,86; stock_item.rb:38 (with_lock por StockItem em ordem não-determinística).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: with_lock por StockItem (stock_item.rb:38) dentro de InventoryUnitsFinalizer.transaction em ordem nao-deterministica entre pedidos com variantes cruzadas gera deadlock no banco; transitorio e sem retry no caminho sincrono."
     },
     {
       "id": "CONC-010",
@@ -346,13 +370,14 @@
       "title": "Promoções duplicadas em conclusões concorrentes",
       "business_impact": "Desconto aplicado em dobro; perda de margem.",
       "technical_risk": "ensure_promotions_eligible usa check com persist:false + promo_total_changed? sem lock entre a verificação e o complete; admin usa mutex diferente/ausente, permitindo duas conclusões passarem.",
-      "severity": 5,
+      "severity": 3,
       "category": "race-condition",
       "file": "core/app/models/spree/order.rb",
       "line": 808,
       "evidence": "order.rb:808-817 (ensure_promotions_eligible com adjuster persist:false).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refutado: ensure_promotions_eligible (order.rb:808-817) roda o adjuster com persist:false como revalidacao e nao aplica/persiste desconto, nao sustentando 'desconto aplicado em dobro'."
     },
     {
       "id": "CONC-011",
@@ -366,7 +391,8 @@
       "line": 525,
       "evidence": "order.rb:525-531,536-543 (update_columns + self.next sem transação).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: restart_checkout_flow usa update_columns (bypassa callbacks/validacoes) e self.next sem transacao envolvente (order.rb:528,539-543), podendo deixar state/shipment_total parciais."
     },
     {
       "id": "CONC-012",
@@ -374,13 +400,14 @@
       "title": "associate_user! via update_all causa lost update e estado stale",
       "business_impact": "Atribuição de usuário/email sobrescreve edições concorrentes silenciosamente.",
       "technical_risk": "unscoped.update_all bypassa callbacks, validações e lock_version.",
-      "severity": 4,
+      "severity": 3,
       "category": "race-condition",
       "file": "core/app/models/spree/order.rb",
       "line": 323,
       "evidence": "order.rb:323-335 (Order.unscoped.where(id:).update_all(attrs)).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Rebaixado: associate_user! usa unscoped.update_all bypassando callbacks/validacoes/lock_version (order.rb:331) — lost update real, porem gated por can?(:admin) e blast radius pequeno."
     },
     {
       "id": "CHAOS-008",
@@ -388,13 +415,14 @@
       "title": "OrderShipping#ship: recalculate/updates/publish fora da transação de inventário",
       "business_impact": "Carton criado sem o shipment constar como enviado; e-mails de expedição e integração 3PL inconsistentes.",
       "technical_risk": "A transação envolve só ship! + Carton.create!; os updates de shipment, o recalculate e o Bus.publish(:carton_shipped) ficam fora dela e podem falhar deixando estado misto.",
-      "severity": 6,
+      "severity": 5,
       "category": "resilience",
       "file": "core/app/models/spree/order_shipping.rb",
       "line": 49,
       "evidence": "order_shipping.rb:49-62 (transação) vs :64-70 e :72-75 (updates/recalculate/publish fora da transação).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado: InventoryUnit.transaction cobre so ship!+Carton.create! (order_shipping.rb:49-62); shipment.update!, recalculate e Bus.publish ficam fora (:64-75) — janela de falha parcial real, mas em fulfillment pos-checkout."
     },
     {
       "id": "CHAOS-009",
@@ -402,13 +430,14 @@
       "title": "PromotionCodeBatchJob longo sem idempotência/checkpoint/retry seguro",
       "business_impact": "Códigos de promoção duplicados ou batch parcialmente construído após falha.",
       "technical_risk": "Herda ActiveJob::Base direto (sem nem retry_on Deadlocked); no rescue faz raise error, e o retry padrão re-roda o batch inteiro do zero sem checkpoint por offset.",
-      "severity": 6,
+      "severity": 2,
       "category": "resilience",
       "file": "legacy_promotions/app/jobs/spree/promotion_code_batch_job.rb",
       "line": 4,
       "evidence": "promotion_code_batch_job.rb:4 (herda ActiveJob::Base), :17-24 (rescue -> raise error -> retry re-roda tudo).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refutado: generate_random_codes retoma de created_codes = promotion_codes.count (checkpoint implicito) e deduplica via get_unique_codes + rescue RecordInvalid (batch_builder.rb:35-53), entao o retry nao re-roda tudo nem duplica; resta so herdar ActiveJob::Base sem retry_on em modulo legacy."
     },
     {
       "id": "CHAOS-012",
@@ -416,13 +445,14 @@
       "title": "Jobs de auditoria fire-and-forget com descarte silencioso",
       "business_impact": "Perda silenciosa da trilha de auditoria (StateChange) — risco de compliance.",
       "technical_risk": "StateChangeTrackingJob enfileirado via perform_later; base_job.rb só faz retry_on Deadlocked e discard_on DeserializationError descarta em silêncio se o registro sumiu.",
-      "severity": 4,
+      "severity": 3,
       "category": "resilience",
       "file": "core/app/jobs/spree/base_job.rb",
       "line": 7,
       "evidence": "base_job.rb:7,10; state_change_tracking_job.rb (enfileirado em order_updater.rb:208).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmado mas baixo impacto: perform_later (order_updater.rb:208) e discard_on DeserializationError (base_job.rb:10) descartam em silencio, porem so se o registro sumiu antes do job (janela estreita) e e trilha de auditoria."
     },
     {
       "id": "SEC-001",
@@ -430,13 +460,14 @@
       "title": "Mass-assignment de identificadores de perfil de gateway em source_attributes",
       "business_impact": "Cliente pode referenciar um meio de pagamento tokenizado de outro usuário no gateway (IDOR de meio de pagamento) — fraude/chargeback.",
       "technical_risk": "gateway_customer_profile_id/gateway_payment_profile_id/wallet_payment_source_id estão na allowlist de clientes; require_card_numbers? pula validação de número/CVV quando há profile. Exploração depende da validação do gateway.",
-      "severity": 6,
+      "severity": 4,
       "category": "OWASP A01",
       "file": "core/lib/spree/permitted_attributes.rb",
       "line": 106,
       "evidence": "permitted_attributes.rb:106-111 (source_attributes inclui gateway_*_profile_id e wallet_payment_source_id); credit_card.rb:169-171 (require_card_numbers? = false com profile).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed but recalibrated: gateway_*_profile_id are client-permitted (permitted_attributes.rb:106-111) with no app-layer owner check and require_card_numbers? skips CVV (credit_card.rb:170), but wallet_payment_source_id is ownership-scoped via order.user.wallet.find (payment_create.rb:58) and exploitation needs an opaque gateway token plus a lax gateway — conditional defense-in-depth, severity 6 inflated."
     },
     {
       "id": "SEC-002",
@@ -450,7 +481,8 @@
       "line": 143,
       "evidence": "base_controller.rb:143,154 (params[:token] / params[:order_token]).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed: api_key falls back to params[:token] (base_controller.rb:143) and order_token to params[:order_token] (base_controller.rb:154), so credentials land in the URL and leak via logs/proxy/Referer (CWE-598)."
     },
     {
       "id": "SEC-004",
@@ -463,8 +495,9 @@
       "file": "api/app/controllers/spree/api/orders_controller.rb",
       "line": 103,
       "evidence": "api/orders_controller.rb:103 (#mine) e :67 (#index, gated por authorize! :admin).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refuted: Order defines a tight ransackable allowlist (order.rb:69-70) and the RansackableAttributes concern returns only default %w[id] | allowed (ransackable_attributes.rb:19-20), so Ransack 4 blocks arbitrary predicates — the 'sem allowlist' premise is false."
     },
     {
       "id": "SEC-003",
@@ -472,13 +505,14 @@
       "title": "Comparação de token de pedido sem tempo constante",
       "business_impact": "Risco baixo/teórico de acesso a pedido de convidado.",
       "technical_risk": "token == order.guest_token usa igualdade de string padrão (curto-circuito) em vez de SecurityUtils.secure_compare; mitigado por token de alta entropia (SecureRandom.urlsafe_base64).",
-      "severity": 3,
+      "severity": 2,
       "category": "OWASP A07",
       "file": "core/app/models/spree/permission_sets/default_customer.rb",
       "line": 55,
       "evidence": "default_customer.rb:55,58 (comparação == sem secure_compare); order.rb:885-889 (token de alta entropia).",
       "status": "open",
-      "verified": false
+      "verified": true,
+      "verification_note": "Confirmed but recalibrated: token == order.guest_token is non-constant-time (default_customer.rb:55,58), but guest_token is 128-bit SecureRandom.urlsafe_base64 (order.rb:887), making a network timing attack infeasible — downgrade 3->2."
     },
     {
       "id": "SEC-005",
@@ -486,13 +520,14 @@
       "title": "associate_user! usa unscoped.update_all (bypass de validação/callbacks)",
       "business_impact": "Risco residual de integridade se chamado sem o gate de autorização.",
       "technical_risk": "self.class.unscoped.where(id:).update_all(attrs) ignora callbacks/validações e default scope. Atualmente gated por can?(:admin) no controller — não explorável por cliente comum.",
-      "severity": 3,
+      "severity": 2,
       "category": "OWASP A04",
       "file": "core/app/models/spree/order.rb",
       "line": 331,
       "evidence": "order.rb:331 (unscoped.update_all); orders_controller.rb:84 / checkouts_controller.rb:46 (gate can?(:admin)).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refuted: unscoped.update_all bypass is intentional and documented (order.rb:330 comment) and every external caller is gated by can?(:admin, @order) (orders_controller.rb:84, checkouts_controller.rb:46) — not customer-exploitable."
     },
     {
       "id": "SEC-006",
@@ -505,8 +540,9 @@
       "file": "core/app/models/spree/order.rb",
       "line": 22,
       "evidence": "order.rb:22-24 (formato R + 9 dígitos numéricos).",
-      "status": "open",
-      "verified": false
+      "status": "false_positive",
+      "verified": false,
+      "verification_note": "Refuted: order number (order.rb:22-24) is not a security boundary; show/update independently require order.user == user or guest_token match (default_customer.rb:57-58), so enumeration grants no access."
     }
   ]
 }

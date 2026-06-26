@@ -37,7 +37,8 @@
               "concurrency-specialist",
               "chaos-engineer-sre",
               "security-auditor",
-              "quality-stability-lead"
+              "quality-stability-lead",
+              "adversarial-verifier"
             ],
             "description": "Agente que originou o achado."
           },
@@ -84,7 +85,11 @@
           "verified": {
             "type": "boolean",
             "default": false,
-            "description": "Se o achado sobreviveu à verificação adversarial (agente verifier, v2.1)."
+            "description": "Se o achado sobreviveu à verificação adversarial (agente adversarial-verifier, v2.1)."
+          },
+          "verification_note": {
+            "type": ["string", "null"],
+            "description": "Veredito do adversarial-verifier: por que o achado foi confirmado ou refutado (com evidência arquivo:linha). Nulo se ainda não verificado."
           }
         }
       }

@@ -174,4 +174,4 @@ chore: update markdownlint config
 - Create new agents (Performance Profiler, Accessibility Auditor)
 - Add real (anonymized) examples under `examples/`
 - Improve the agents' output templates
-- Work on roadmap items (v2.1: adversarial verifier, severity rubric, eval harness)
+- Work on roadmap items (v2.1: ✅ adversarial verifier shipped — next up: severity rubric, eval harness)

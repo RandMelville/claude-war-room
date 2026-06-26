@@ -6,9 +6,10 @@ Esta pasta contém saídas do War Room para você ver **o que recebe** antes de 
 
 Saída **real** do War Room completo (`/warroom` + `/warroom-audit`) sobre o módulo de pedidos/checkout
 do [Solidus](https://github.com/solidusio/solidus) (e-commerce Rails OSS, commit `8d781ac`). 31
-arquivos analisados, **36 achados** consolidados (Índice de Confiança 🔴 Baixo), toda afirmação com
-evidência `arquivo:linha`. É o melhor lugar para ver o nível de profundidade que o War Room entrega
-num codebase de verdade — veja [`solidus-checkout/README.md`](solidus-checkout/README.md).
+arquivos analisados, 36 achados brutos → **27 confirmados** após verificação adversarial (9 falsos
+positivos; Índice de Confiança recalibrado 🔴 Baixo → 🟡 Moderado), toda afirmação com evidência
+`arquivo:linha`. É o melhor lugar para ver o nível de profundidade que o War Room entrega num codebase
+de verdade — veja [`solidus-checkout/README.md`](solidus-checkout/README.md).
 
 ## `sample-orders/`
 
