@@ -1,34 +1,34 @@
-# Guia de Contribuição
+# Contributing Guide
 
-Obrigado pelo interesse em contribuir com o Claude War Room! Este guia explica como participar do projeto.
+Thanks for your interest in contributing to Claude War Room! This guide explains how to take part in the project.
 
 ---
 
-## Primeiros Passos
+## Getting Started
 
-1. **Fork** o repositório
-2. **Clone** seu fork:
+1. **Fork** the repository
+2. **Clone** your fork:
    ```bash
-   git clone https://github.com/SEU_USUARIO/claude-war-room.git
+   git clone https://github.com/YOUR_USERNAME/claude-war-room.git
    cd claude-war-room
    ```
-3. **Crie uma branch** para sua mudança:
+3. **Create a branch** for your change:
    ```bash
-   git checkout -b feat/meu-novo-agente
+   git checkout -b feat/my-new-agent
    ```
 
 ---
 
-## Estrutura de um Agente
+## Agent Structure
 
-Todo agente deve seguir esta estrutura no arquivo `.md`:
+Every agent must follow this structure in its `.md` file:
 
-### Frontmatter YAML (obrigatório)
+### YAML frontmatter (required)
 
 ```yaml
 ---
-name: meu-agente
-description: "Descrição curta do que o agente faz. Usado pelo Claude Code para decidir quando invocar."
+name: my-agent
+description: "Short description of what the agent does. Used by Claude Code to decide when to invoke it."
 model: opus
 tools:
   - Read
@@ -39,111 +39,112 @@ tools:
 ---
 ```
 
-**Campos obrigatórios:**
-- `name` — slug **kebab-case** (deve casar com o nome usado em `commands/` e no enum de `agent` em `schemas/findings.schema.json`)
-- `description` — O que faz e quando usar (o Claude Code usa isso para routing)
-- `model` — `opus`, `sonnet` ou `haiku` (Recon usa `sonnet`; especialistas usam `opus`)
-- `tools` — Lista de ferramentas que o agente pode usar
+**Required fields:**
+- `name` — **kebab-case** slug (must match the name used in `commands/` and the `agent` enum in `schemas/findings.schema.json`)
+- `description` — What it does and when to use it (Claude Code uses this for routing)
+- `model` — `opus`, `sonnet`, or `haiku` (Recon uses `sonnet`; specialists use `opus`)
+- `tools` — List of tools the agent is allowed to use
 
-### Corpo do Agente (obrigatório)
+### Agent body (required)
 
-Seções que todo agente deve ter:
+Sections every agent must have:
 
 ```markdown
-# Título do Agente
+# Agent Title
 
 ## Role
-{Quem é o agente e qual sua especialidade}
+{Who the agent is and what their specialty is}
 
-## Foco de Análise
-{Lista numerada dos pontos de atenção}
+## Analysis Focus
+{Numbered list of what to pay attention to}
 
-## Protocolo de Execução
-### Fase 1: {Nome}
-### Fase 2: {Nome}
-### Fase 3: Entrega
+## Execution Protocol
+### Phase 1: {Name}
+### Phase 2: {Name}
+### Phase 3: Delivery
 
-## Estrutura Obrigatória de Resposta
-{Template entre ``` com as seções exatas que o agente deve produzir}
+## Mandatory Response Structure
+{Template inside ``` with the exact sections the agent must produce}
 
-## Persona e Tom de Voz
-{Como o agente se comunica}
+## Persona & Tone of Voice
+{How the agent communicates}
 
-## Diretrizes Inegociáveis
-{Regras que o agente nunca deve quebrar}
+## Non-Negotiable Guidelines
+{Rules the agent must never break}
 ```
 
-### Convenções
+### Conventions
 
-- **Diagramas Mermaid obrigatórios** na estrutura de resposta
-- **Tabelas** para dados estruturados (gargalos, riscos, ações)
-- **Referências a arquivo:linha** sempre que afirmar algo sobre código
-- **Última diretriz** deve ser: "Respeite o CLAUDE.md do repositório sendo analisado, se existir."
+- **Mermaid diagrams are mandatory** in the response structure
+- **Tables** for structured data (bottlenecks, risks, actions)
+- **`file:line` references** whenever you assert something about the code
+- **Language-adaptive output** — the agent answers in the language of the analyzed repository / user request, defaulting to English
+- **The last guideline** must be: "Respect the analyzed repository's `CLAUDE.md`, if present."
 
 ---
 
-## Como Testar um Agente
+## How to Test an Agent
 
-1. Instale o plugin a partir do seu checkout local (use o caminho do seu fork como marketplace):
+1. Install the plugin from your local checkout (use your fork's path as the marketplace):
    ```
-   /plugin marketplace add /caminho/para/seu/claude-war-room
+   /plugin marketplace add /path/to/your/claude-war-room
    /plugin install claude-war-room
    ```
 
-2. Abra o Claude Code em um projeto real:
+2. Open Claude Code in a real project:
    ```bash
-   cd /caminho/do/projeto
+   cd /path/to/project
    claude
    ```
 
-3. Invoque o agente diretamente (sem o War Room completo):
-   - O Claude Code vai usar o agente automaticamente quando a descrição casar com a tarefa
-   - Ou mencione explicitamente: "Use o agente [Nome] para analisar..."
+3. Invoke the agent directly (without the full War Room):
+   - Claude Code will use the agent automatically when its description matches the task
+   - Or mention it explicitly: "Use the [Name] agent to analyze..."
 
-4. Verifique:
-   - O agente segue o protocolo de fases?
-   - O output segue a estrutura obrigatória?
-   - Os diagramas Mermaid renderizam corretamente?
-   - As referências a arquivo:linha estão corretas?
-
----
-
-## Se For Adicionar ao Pipeline
-
-Se o agente deve fazer parte do fluxo War Room:
-
-1. **Crie** `agents/meu-agente.md` com `name` em kebab-case.
-2. **Registre** o caminho em `.claude-plugin/plugin.json` no array `agents[]`.
-3. **Adicione** o `name` ao enum `agent` em `schemas/findings.schema.json`.
-4. **Conecte** ao fan-out em `commands/warroom-audit.md` (mais uma chamada `Agent` paralela).
-5. **Atualize** docs: `docs/ARCHITECTURE.md` e o README.
+4. Check:
+   - Does the agent follow the phased protocol?
+   - Does the output follow the mandatory structure?
+   - Do the Mermaid diagrams render correctly?
+   - Are the `file:line` references accurate?
 
 ---
 
-## Convenções de Commit
+## Adding to the Pipeline
 
-Usamos [Conventional Commits](https://www.conventionalcommits.org/):
+If the agent should be part of the War Room flow:
+
+1. **Create** `agents/my-agent.md` with a kebab-case `name`.
+2. **Register** the path in `.claude-plugin/plugin.json` under the `agents[]` array.
+3. **Add** the `name` to the `agent` enum in `schemas/findings.schema.json`.
+4. **Wire it** into the fan-out in `commands/warroom-audit.md` (one more parallel `Agent` call).
+5. **Update** the docs: `docs/ARCHITECTURE.md` and the README.
+
+---
+
+## Commit Conventions
+
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
-feat: adiciona agente Security Auditor ao pipeline
-fix: corrige validação de frontmatter no CI
-docs: atualiza exemplos de saída do SRE-CHAOS
-chore: atualiza markdownlint config
+feat: add Security Auditor agent to the pipeline
+fix: correct frontmatter validation in CI
+docs: update SRE-CHAOS output examples
+chore: update markdownlint config
 ```
 
-**Tipos:**
-- `feat` — Novo agente, nova funcionalidade
-- `fix` — Correção de bug
-- `docs` — Apenas documentação
-- `chore` — CI, configs, manutenção
-- `refactor` — Reestruturação sem mudar comportamento
+**Types:**
+- `feat` — New agent, new feature
+- `fix` — Bug fix
+- `docs` — Documentation only
+- `chore` — CI, configs, maintenance
+- `refactor` — Restructuring without behavior change
 
 ---
 
-## Processo de Pull Request
+## Pull Request Process
 
-1. Faça suas mudanças na branch
-2. Rode o lint localmente (se possível):
+1. Make your changes on the branch
+2. Run the linters locally (if possible):
    ```bash
    # Markdown lint
    npx markdownlint-cli2 "**/*.md"
@@ -151,26 +152,26 @@ chore: atualiza markdownlint config
    # ShellCheck
    shellcheck install.sh
    ```
-3. Abra um PR para `main`
-4. Preencha o template do PR
-5. Aguarde review e CI passar
+3. Open a PR against `main`
+4. Fill out the PR template
+5. Wait for review and CI to pass
 
 ---
 
-## O que NÃO fazer
+## What NOT to Do
 
-- Não remova agentes do pipeline sem discussão (abra uma issue antes)
-- Não renomeie os slash commands (`/warroom`, `/warroom-audit`) sem consenso
-- Não adicione dependências externas ao runtime (o plugin é zero-dependency)
-- Não inclua dados reais de projetos nos exemplos
-- Não faça push direto para `main` (use PR)
+- Don't remove agents from the pipeline without discussion (open an issue first)
+- Don't rename the slash commands (`/warroom`, `/warroom-audit`) without consensus
+- Don't add external runtime dependencies (the plugin is zero-dependency)
+- Don't include real project data in the examples
+- Don't push directly to `main` (use a PR)
 
 ---
 
-## Ideias de Contribuição
+## Contribution Ideas
 
-- Criar **domain packs** novos (`packs/fintech`, `packs/healthtech`, …)
-- Criar agentes novos (Performance Profiler, Accessibility Auditor)
-- Adicionar exemplos reais (anonimizados) em `examples/`
-- Melhorar templates de output dos agentes
-- Trabalhar nos itens do roadmap (v2.1: verificador adversarial, rubrica de severidade, eval harness)
+- Create new **domain packs** (`packs/fintech`, `packs/healthtech`, …)
+- Create new agents (Performance Profiler, Accessibility Auditor)
+- Add real (anonymized) examples under `examples/`
+- Improve the agents' output templates
+- Work on roadmap items (v2.1: adversarial verifier, severity rubric, eval harness)
