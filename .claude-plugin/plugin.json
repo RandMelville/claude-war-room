@@ -1,6 +1,6 @@
 {
   "name": "claude-war-room",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Instant, reliable context for any legacy codebase — reverse-engineering into living docs, plus a multi-agent War Room to hunt down the risks.",
   "author": {
     "name": "Randerson Melville",
